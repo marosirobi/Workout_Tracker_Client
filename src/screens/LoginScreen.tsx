@@ -16,7 +16,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const setUser = useAuthStore((state) => state.setUser);
+  const { setAuth } = useAuthStore();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -25,11 +25,12 @@ export default function LoginScreen() {
     }
 
     try {
-      const user = await authService.login(email, password);
-      setUser(user);
+      const { user, token } = await authService.login(email, password);
+      setAuth(user, token);
+      router.replace("/dashboard");
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Hibas email vagy jelszo";
+      const errorMessage = error.response?.data || error.message || error;
+      console.error("HIBA: ", error.response?.data || error.message || error);
       Alert.alert("Bejelentkezes sikertelen", errorMessage);
     }
   };

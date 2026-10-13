@@ -1,3 +1,4 @@
+import { useAuthStore } from "@/store/authStore";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
@@ -12,7 +13,7 @@ export const axiosClient = axios.create({
 
 axiosClient.interceptors.request.use(
   async (config) => {
-    const token = await SecureStore.getItemAsync("accessToken");
+    const token = useAuthStore.getState().token;
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -21,6 +22,22 @@ axiosClient.interceptors.request.use(
     return config;
   },
   async (error) => {
+    return Promise.reject(error);
+  },
+);
+
+axiosClient.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (
+      error.response &&
+      (error.response.status === 401 || error.response.status === 403)
+    ) {
+      console.log("Token lejart vagy ervenytelen");
+      useAuthStore.getState().clearAuth();
+    }
     return Promise.reject(error);
   },
 );

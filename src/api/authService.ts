@@ -10,10 +10,13 @@ export const authService = {
 
     const { token, refreshToken, user } = response.data;
 
-    await SecureStore.setItemAsync("accessToken", token);
-    await SecureStore.setItemAsync("refreshToken", refreshToken);
-
-    return user;
+    return {
+      user: {
+        id: user.id,
+        username: user.username,
+      },
+      token: token,
+    };
   },
 
   register: async (username: string, email: string, password: string) => {

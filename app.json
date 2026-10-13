@@ -33,6 +33,13 @@
           "imageWidth": 76
         }
       ],
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Az alkalmazásnak szüksége van a helyzetedre a kardió edzések (távolság, tempó) méréséhez futás vagy kerékpározás közben."
+        }
+      ],
       "expo-secure-store"
     ],
     "experiments": {

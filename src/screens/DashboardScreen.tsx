@@ -2,8 +2,8 @@ import { authService } from "@/api/authService";
 import { workoutService, WorkoutSummary } from "@/api/workoutService";
 import { useAuthStore } from "@/store/authStore";
 import { useWorkoutStore } from "@/store/workoutStore";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -26,9 +26,11 @@ export default function DashboardScreen() {
   const [isModalVisible, setModalVisible] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
 
-  useEffect(() => {
-    fetchWorkouts();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchWorkouts();
+    }, []),
+  );
 
   const fetchWorkouts = async () => {
     try {
@@ -65,18 +67,23 @@ export default function DashboardScreen() {
       console.error("Hiba edzes inditasakor", error);
       Alert.alert("hiba", "nem sikerult elinditani az edzest");
     } finally {
-      setIsStarting(true);
+      setIsStarting(false);
     }
   };
 
   const renderWorkoutCard = ({ item }: { item: WorkoutSummary }) => {
-    const formattedDate = new Date(item.endTime).toLocaleDateString("hu-HU");
+    const formattedDate = item.endTime
+      ? new Date(item.endTime).toLocaleDateString("hu-HU")
+      : "folyamatban";
     const durationMins = item.durationSeconds
       ? Math.floor(item.durationSeconds / 60)
       : 0;
 
     return (
-      <View style={styles.card}>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => router.push(`../workouts/${item.id}`)}
+      >
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>{item.name}</Text>
           <Text style={styles.cardType}>
@@ -87,16 +94,16 @@ export default function DashboardScreen() {
         <Text style={styles.cardDate}>{formattedDate}</Text>
 
         <View style={styles.cardDetails}>
-          {item.type === "CARDIO" && item.totalDistance && (
+          {item.type === "CARDIO" && item.totalDistance != null ? (
             <Text style={styles.detailText}>
               Distance: {item.totalDistance} km
             </Text>
-          )}
-          {durationMins > 0 && (
+          ) : null}
+          {durationMins > 0 ? (
             <Text style={styles.detailText}>Time: {durationMins} min</Text>
-          )}
+          ) : null}
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
