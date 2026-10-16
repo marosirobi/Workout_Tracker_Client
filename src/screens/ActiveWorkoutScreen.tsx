@@ -1,17 +1,21 @@
 import { exerciseService } from "@/api/exerciseService";
 import { workoutService } from "@/api/workoutService";
 import {
+  startLocationTracking,
+  stopLocationTracking,
+} from "@/services/locationTask";
+import {
   getElapsedSeconds,
   useWorkoutStore,
   WorkoutExercise,
 } from "@/store/workoutStore";
-import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
   BackHandler,
   FlatList,
+  Linking,
   Modal,
   StyleSheet,
   Text,
@@ -37,7 +41,6 @@ export default function ActiveWorkoutScreen() {
     addExercise,
     addSet,
     updateSet,
-    recordLocation,
     clearActiveWorkout,
   } = useWorkoutStore();
 
@@ -69,47 +72,31 @@ export default function ActiveWorkoutScreen() {
   }, [activeWorkoutType]);
 
   useEffect(() => {
-    if (activeWorkoutType != "CARDIO") return;
+    if (activeWorkoutType !== "CARDIO") return;
 
-    let locationSubcription: Location.LocationSubscription | null = null;
-    const startGpsTracking = async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setGpsStatus("GPS forbidden");
+    const startGps = async () => {
+      const mode = await startLocationTracking();
+      if (mode === "denied") {
+        setGpsStatus("GPS denied");
         Alert.alert(
           "Helymeghatározás szükséges",
           "Engedélyezd a GPS-t a kardió edzés méréséhez!",
         );
-        return;
-      }
-
-      setGpsStatus("GPS active");
-
-      locationSubcription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.BestForNavigation,
-          timeInterval: 2000,
-          distanceInterval: 2,
-        },
-        (location) => {
-          recordLocation({
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-            altitude: location.coords.altitude,
-            speed: location.coords.speed,
-            accuracy: location.coords.accuracy,
-            timestamp: location.timestamp,
-          });
-        },
-      );
-    };
-    startGpsTracking();
-
-    return () => {
-      if (locationSubcription) {
-        locationSubcription.remove();
+      } else if (mode === "foreground") {
+        setGpsStatus("GPS active(foreground)");
+        Alert.alert(
+          "Lezárt képernyőnél nem mér",
+          'Ha azt szeretnéd, hogy az edzés akkor is mérjen, amikor a telefon le van zárva, a beállításokban válaszd a "Mindig engedélyezve" lehetőséget a helyadatoknál.',
+          [
+            { text: "Most nem", style: "cancel" },
+            { text: "Beállítások", onPress: () => Linking.openSettings() },
+          ],
+        );
+      } else {
+        setGpsStatus("GPS active");
       }
     };
+    startGps();
   }, [activeWorkoutType]);
 
   useEffect(() => {
@@ -119,7 +106,8 @@ export default function ActiveWorkoutScreen() {
         {
           text: "Megszakitas",
           style: "destructive",
-          onPress: () => {
+          onPress: async () => {
+            await stopLocationTracking();
             clearActiveWorkout();
             router.replace("/dashboard");
           },
@@ -308,6 +296,7 @@ export default function ActiveWorkoutScreen() {
 
         await workoutService.updateWorkout(activeWorkoutId, updateRequest);
       }
+      await stopLocationTracking();
       clearActiveWorkout();
       router.replace("/dashboard");
     } catch (error: any) {
@@ -322,7 +311,8 @@ export default function ActiveWorkoutScreen() {
           [
             {
               text: "Rendben",
-              onPress: () => {
+              onPress: async () => {
+                await stopLocationTracking();
                 clearActiveWorkout();
                 router.replace("/dashboard");
               },

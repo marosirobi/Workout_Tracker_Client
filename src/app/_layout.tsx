@@ -1,3 +1,5 @@
+import "@/services/locationTask";
+import { syncLocationTrackingWithStore } from "@/services/locationTask";
 import { useAuthStore } from "@/store/authStore";
 import { useWorkoutStore } from "@/store/workoutStore";
 import { Stack, useRouter, useSegments } from "expo-router";
@@ -17,6 +19,12 @@ export default function RootLayout() {
     }, 500);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (isReady) {
+      syncLocationTrackingWithStore();
+    }
+  }, [isReady]);
 
   useEffect(() => {
     if (!isReady || !segments) return;
