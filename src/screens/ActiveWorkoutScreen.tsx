@@ -1,14 +1,13 @@
 import { exerciseService } from "@/api/exerciseService";
 import { workoutService } from "@/api/workoutService";
 import {
-  TrackPoint,
+  getElapsedSeconds,
   useWorkoutStore,
   WorkoutExercise,
 } from "@/store/workoutStore";
-import { calculateDistance } from "@/utils/locationUtils";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   BackHandler,
@@ -31,23 +30,24 @@ export default function ActiveWorkoutScreen() {
     startTime,
     trackPoints,
     totalDistanceKm,
+    elevationGain,
+    currentSpeedMs,
+    pausedAt,
+    totalPausedMs,
     addExercise,
     addSet,
     updateSet,
-    updateCardioStats,
+    recordLocation,
     clearActiveWorkout,
   } = useWorkoutStore();
 
-  const [elapsedTime, setElapsedTime] = useState("00:00");
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [currentSpeedMs, setCurrentSpeedMs] = useState(0);
-  const [elevationGain, setElevationGain] = useState(0);
+  const [now, setNow] = useState(Date.now());
+  const elapsedSeconds = getElapsedSeconds(
+    { startTime, pausedAt, totalPausedMs },
+    now,
+  );
+
   const [gpsStatus, setGpsStatus] = useState("GPS keres...");
-  const lastCoordsRef = useRef<{
-    latitude: number;
-    longitude: number;
-    elevation: number;
-  } | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
 
   const [isModalVisible, setModalVisible] = useState(false);
@@ -92,47 +92,14 @@ export default function ActiveWorkoutScreen() {
           distanceInterval: 2,
         },
         (location) => {
-          const { latitude, longitude, altitude, speed } = location.coords;
-          const currentElevation = altitude ?? 0;
-          const validSpeed = speed && speed > 0 ? speed : 0;
-
-          setCurrentSpeedMs(validSpeed);
-
-          let distanceDeltaKm = 0;
-
-          if (lastCoordsRef.current) {
-            const distKm = calculateDistance(
-              lastCoordsRef.current.latitude,
-              lastCoordsRef.current.longitude,
-              latitude,
-              longitude,
-            );
-
-            if (distKm >= 0.002) {
-              distanceDeltaKm = distKm;
-            }
-
-            const altDiff = currentElevation - lastCoordsRef.current.elevation;
-            if (altDiff >= 0.5 && altDiff < 30) {
-              setElevationGain((prev) => prev + Math.round(altDiff));
-            }
-          }
-
-          lastCoordsRef.current = {
-            latitude,
-            longitude,
-            elevation: currentElevation,
-          };
-
-          const newPoint: TrackPoint = {
-            latitude,
-            longitude,
-            elevation: Math.round(currentElevation),
-            speed: Number(validSpeed.toFixed(2)),
-            timestamp: new Date(location.timestamp).toISOString(),
-          };
-
-          updateCardioStats(distanceDeltaKm, newPoint);
+          recordLocation({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+            altitude: location.coords.altitude,
+            speed: location.coords.speed,
+            accuracy: location.coords.accuracy,
+            timestamp: location.timestamp,
+          });
         },
       );
     };
@@ -168,28 +135,7 @@ export default function ActiveWorkoutScreen() {
   }, []);
 
   useEffect(() => {
-    if (!startTime) return;
-
-    const interval = setInterval(() => {
-      const start = new Date(startTime).valueOf();
-      const now = Date.now();
-      const diffSeconds = Math.floor((now - start) / 1000);
-
-      const minutes = Math.floor(diffSeconds / 60);
-      const seconds = diffSeconds % 60;
-
-      setElapsedTime(
-        `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`,
-      );
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [startTime]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setElapsedSeconds((prev) => prev + 1);
-    }, 1000);
+    const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
 

@@ -8,16 +8,18 @@
     "scheme": "workouttrackerclient",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "bundleIdentifier": "com.workouttracker.client"
     },
     "android": {
+      "package": "com.workouttracker.client",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["android.permission.POST_NOTIFICATIONS"]
     },
     "web": {
       "output": "static",
@@ -33,14 +35,23 @@
           "imageWidth": 76
         }
       ],
-      "expo-router",
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Az alkalmazásnak szüksége van a helyzetedre a kardió edzések (távolság, tempó) méréséhez futás vagy kerékpározás közben."
+          "locationWhenInUsePermission": "Az alkalmazás a helyzetedet használja a kardió edzések (távolság, tempó) méréséhez.",
+          "locationAlwaysAndWhenInUsePermission": "Az alkalmazásnak akkor is szüksége van a helyzetedre, amikor a telefon le van zárva, hogy az edzés mérése ne álljon le.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "isIosBackgroundLocationEnabled": true
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-widgets",
+        {
+          "frequentUpdates": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
