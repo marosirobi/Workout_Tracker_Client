@@ -20,6 +20,7 @@ export type LiveWorkoutSnapshot = {
 };
 
 export interface LiveWorkoutDisplay {
+  requestPermission(): Promise<boolean>;
   show(snapshot: LiveWorkoutSnapshot): Promise<void>;
   hide(): Promise<void>;
   addActionListener(callback: (action: LiveAction) => void): () => void;
