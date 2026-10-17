@@ -40,6 +40,7 @@ interface LastCoords {
   latitude: number;
   longitude: number;
   elevation: number;
+  timestamp: number;
 }
 
 interface ActiveWorkoutData {
@@ -94,6 +95,8 @@ const EMPTY_WORKOUT: ActiveWorkoutData = {
 
 const MAX_ACCURACY_METERS = 25;
 const MIN_STEP_KM = 0.002;
+const MAX_SPEED_MS = 20;
+const ELEVATION_NOISE_M = 2;
 
 export const useWorkoutStore = create<WorkoutState>()(
   persist(
@@ -190,6 +193,7 @@ export const useWorkoutStore = create<WorkoutState>()(
                 latitude: sample.latitude,
                 longitude: sample.longitude,
                 elevation,
+                timestamp: sample.timestamp,
               },
             };
           }
@@ -205,8 +209,29 @@ export const useWorkoutStore = create<WorkoutState>()(
             return { currentSpeedMs: speed };
           }
 
+          const dtSec = (sample.timestamp - last.timestamp) / 1000;
+          if (dtSec > 0 && (stepKm * 1000) / dtSec > MAX_SPEED_MS) {
+            return {
+              currentSpeedMs: 0,
+              lastCoords: {
+                latitude: sample.latitude,
+                longitude: sample.longitude,
+                elevation,
+                timestamp: sample.timestamp,
+              },
+            };
+          }
+
           const altDiff = elevation - last.elevation;
-          const climbed = altDiff >= 0.5 && altDiff < 30 ? altDiff : 0;
+          let climbed = 0;
+          let refElevation = last.elevation;
+
+          if (altDiff >= ELEVATION_NOISE_M && altDiff < 30) {
+            climbed = altDiff;
+            refElevation = elevation;
+          } else if (altDiff <= -ELEVATION_NOISE_M) {
+            refElevation = elevation;
+          }
 
           return {
             currentSpeedMs: speed,
@@ -216,7 +241,8 @@ export const useWorkoutStore = create<WorkoutState>()(
             lastCoords: {
               latitude: sample.latitude,
               longitude: sample.longitude,
-              elevation,
+              elevation: refElevation,
+              timestamp: sample.timestamp,
             },
           };
         }),

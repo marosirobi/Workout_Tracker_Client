@@ -38,7 +38,7 @@ export const countCompletedSets = (exercises: WorkoutExercise[]): number =>
     0,
   );
 
-export const getEffectiveStartMs = (startTime: number, totalPausedMs: number) =>
+export const getEffectiveStartMs = (startTime: string, totalPausedMs: number) =>
   new Date(startTime).getTime() + totalPausedMs;
 
 export const getTotalVolumeKg = (exercises: WorkoutExercise[]): number =>

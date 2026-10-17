@@ -1,11 +1,11 @@
-import "@/services/locationTask";
+import { startWorkoutLiveSync } from "@/services/live/workoutLiveSync";
 import { syncLocationTrackingWithStore } from "@/services/locationTask";
+
 import { useAuthStore } from "@/store/authStore";
 import { useWorkoutStore } from "@/store/workoutStore";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
-
 export default function RootLayout() {
   const { activeWorkoutId } = useWorkoutStore();
   const { user } = useAuthStore();
@@ -23,6 +23,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (isReady) {
       syncLocationTrackingWithStore();
+      startWorkoutLiveSync();
     }
   }, [isReady]);
 
@@ -49,7 +50,7 @@ export default function RootLayout() {
         router.replace("/dashboard" as any);
       }
     }
-  }, [isReady, user, activeWorkoutId, segments]);
+  }, [isReady, user, activeWorkoutId, segments, router]);
 
   if (!isReady) {
     return (

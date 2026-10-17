@@ -26,13 +26,7 @@ export default function DashboardScreen() {
   const [isModalVisible, setModalVisible] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchWorkouts();
-    }, []),
-  );
-
-  const fetchWorkouts = async () => {
+  const fetchWorkouts = useCallback(async () => {
     try {
       setLoading(true);
       const response = await workoutService.getUserWorkouts();
@@ -42,7 +36,13 @@ export default function DashboardScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchWorkouts();
+    }, [fetchWorkouts]),
+  );
 
   const handleLogout = async () => {
     await authService.logout();

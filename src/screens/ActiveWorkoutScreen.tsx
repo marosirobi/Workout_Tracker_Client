@@ -1,5 +1,6 @@
 import { exerciseService } from "@/api/exerciseService";
 import { workoutService } from "@/api/workoutService";
+import { prepareLiveDisplay } from "@/services/live/workoutLiveSync";
 import {
   startLocationTracking,
   stopLocationTracking,
@@ -9,6 +10,12 @@ import {
   useWorkoutStore,
   WorkoutExercise,
 } from "@/store/workoutStore";
+import {
+  formatDuration,
+  formatPace,
+  getAvgPaceMinutes,
+  getCurrentPaceMinutes,
+} from "@/utils/workoutFormat";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -42,13 +49,16 @@ export default function ActiveWorkoutScreen() {
     addSet,
     updateSet,
     clearActiveWorkout,
+    pauseWorkout,
+    resumeWorkout,
   } = useWorkoutStore();
 
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
   const elapsedSeconds = getElapsedSeconds(
     { startTime, pausedAt, totalPausedMs },
     now,
   );
+  const isPaused = pausedAt !== null;
 
   const [gpsStatus, setGpsStatus] = useState("GPS keres...");
   const [isFinishing, setIsFinishing] = useState(false);
@@ -58,7 +68,7 @@ export default function ActiveWorkoutScreen() {
   const [availableExercises, setAvailableExercises] = useState<any[]>([]);
 
   useEffect(() => {
-    if (activeWorkoutType != "STRENGTH") return;
+    if (activeWorkoutType !== "STRENGTH") return;
 
     const fetchExercises = async () => {
       try {
@@ -72,9 +82,13 @@ export default function ActiveWorkoutScreen() {
   }, [activeWorkoutType]);
 
   useEffect(() => {
-    if (activeWorkoutType !== "CARDIO") return;
+    if (!activeWorkoutType) return;
 
-    const startGps = async () => {
+    const startTracking = async () => {
+      await prepareLiveDisplay();
+
+      if (activeWorkoutType !== "CARDIO") return;
+
       const mode = await startLocationTracking();
       if (mode === "denied") {
         setGpsStatus("GPS denied");
@@ -96,7 +110,7 @@ export default function ActiveWorkoutScreen() {
         setGpsStatus("GPS active");
       }
     };
-    startGps();
+    startTracking();
   }, [activeWorkoutType]);
 
   useEffect(() => {
@@ -127,29 +141,8 @@ export default function ActiveWorkoutScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  const formatTime = (totalSecs: number) => {
-    const hours = Math.floor(totalSecs / 3600);
-    const mins = Math.floor((totalSecs % 3600) / 60);
-    const secs = totalSecs % 60;
-    if (hours > 0) {
-      return `${hours}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-    }
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
-  const avgPaceMinutes =
-    totalDistanceKm > 0.01 ? elapsedSeconds / 60 / totalDistanceKm : 0;
-
-  const currentPaceMinutes =
-    currentSpeedMs > 0.4 ? 1000 / currentSpeedMs / 60 : 0;
-
-  const formatPace = (paceInMinutes: number) => {
-    if (!paceInMinutes || paceInMinutes <= 0 || paceInMinutes > 45)
-      return "--:--";
-    const mins = Math.floor(paceInMinutes);
-    const secs = Math.round((paceInMinutes % 1) * 60);
-    if (secs === 60) return `${mins + 1}:00`;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
+  const avgPaceMinutes = getAvgPaceMinutes(elapsedSeconds, totalDistanceKm);
+  const currentPaceMinutes = getCurrentPaceMinutes(currentSpeedMs);
 
   const filteredExercises = availableExercises.filter((ex) =>
     ex.exerciseName.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -332,7 +325,10 @@ export default function ActiveWorkoutScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.timerText}>{formatTime(elapsedSeconds)}</Text>
+      {isPaused && <Text style={styles.pausedLabel}>PAUSED</Text>}
+      <Text style={[styles.timerText, isPaused && styles.timerTextPaused]}>
+        {formatDuration(elapsedSeconds)}
+      </Text>
 
       {activeWorkoutType === "STRENGTH" && (
         <View style={{ flex: 1, width: "100%" }}>
@@ -386,7 +382,9 @@ export default function ActiveWorkoutScreen() {
 
             <View style={styles.metricBox}>
               <Text style={styles.metricLabel}>SZINTEMELKEDÉS</Text>
-              <Text style={styles.metricValue}>{elevationGain}</Text>
+              <Text style={styles.metricValue}>
+                {Math.round(elevationGain)}
+              </Text>
               <Text style={styles.metricUnit}>méter</Text>
             </View>
 
@@ -401,15 +399,38 @@ export default function ActiveWorkoutScreen() {
         </View>
       )}
 
-      <TouchableOpacity
-        style={[styles.finishButton, isFinishing && { opacity: 0.7 }]}
-        onPress={handleFinishWorkout}
-        disabled={isFinishing}
-      >
-        <Text style={styles.finishButtonText}>
-          {isFinishing ? "Saving" : "Finish"}
-        </Text>
-      </TouchableOpacity>
+      <View style={styles.controls}>
+        {isPaused ? (
+          <>
+            <TouchableOpacity
+              style={[styles.controlButton, styles.primaryButton]}
+              onPress={resumeWorkout}
+            >
+              <Text style={styles.controlButtonText}>▶ Folytatás</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.controlButton,
+                styles.secondaryButton,
+                isFinishing && { opacity: 0.6 },
+              ]}
+              onPress={handleFinishWorkout}
+              disabled={isFinishing}
+            >
+              <Text style={styles.controlButtonText}>
+                {isFinishing ? "Mentés…" : "■  Befejezés"}
+              </Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <TouchableOpacity
+            style={[styles.controlButton, styles.primaryButton]}
+            onPress={pauseWorkout}
+          >
+            <Text style={styles.controlButtonText}>❚❚ Szünet</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       <Modal
         visible={isModalVisible}
@@ -594,16 +615,37 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  addExerciseButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
-  finishButton: {
-    backgroundColor: "#E53935",
+  pausedLabel: {
+    color: "#FC4C02",
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 2,
+  },
+  timerTextPaused: { color: "#666" },
+  controls: {
+    flexDirection: "row",
     width: "100%",
-    padding: 16,
-    borderRadius: 12,
+    gap: 12,
+  },
+  controlButton: {
+    flex: 1,
+    paddingVertical: 18,
+    borderRadius: 999,
     alignItems: "center",
   },
-  finishButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
-
+  primaryButton: { backgroundColor: "#FC4C02" },
+  secondaryButton: {
+    backgroundColor: "#1E1E1E",
+    borderWidth: 1,
+    borderColor: "#333",
+  },
+  controlButtonText: {
+    color: "white",
+    fontSize: 17,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  addExerciseButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
   modalContainer: { flex: 1, backgroundColor: "#121212", padding: 20 },
   modalHeader: {
     flexDirection: "row",
