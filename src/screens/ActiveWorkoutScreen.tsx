@@ -134,7 +134,7 @@ export default function ActiveWorkoutScreen() {
       onBackPress,
     );
     return () => backHandler.remove();
-  }, []);
+  }, [router, clearActiveWorkout]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);

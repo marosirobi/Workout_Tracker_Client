@@ -81,9 +81,8 @@ export async function startLocationTracking(): Promise<TrackingMode> {
           showsBackgroundLocationIndicator: true,
 
           foregroundService: {
-            notificationTitle: "Edzés folyamatban",
-            notificationBody: "A GPS méri az útvonalat",
-            notificationColor: "#FF5722",
+            notificationTitle: "Helymeghatározás aktiv",
+            notificationBody: "Az edzés útvonalának rögzitése",
             killServiceOnDestroy: false,
           },
         });
