@@ -9,6 +9,7 @@ export interface WorkoutSummary {
   totalDistance: number | null;
   avgPace: string | null;
   durationSeconds: number | null;
+  movingTimeSeconds: number | null;
 }
 
 export interface ExerciseSetDetail {

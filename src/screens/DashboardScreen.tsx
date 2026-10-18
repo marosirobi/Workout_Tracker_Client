@@ -75,9 +75,8 @@ export default function DashboardScreen() {
     const formattedDate = item.endTime
       ? new Date(item.endTime).toLocaleDateString("hu-HU")
       : "folyamatban";
-    const durationMins = item.durationSeconds
-      ? Math.floor(item.durationSeconds / 60)
-      : 0;
+    const shownMins = item.movingTimeSeconds ?? item.durationSeconds ?? 0;
+    const durationMins = Math.floor(shownMins / 60);
 
     return (
       <TouchableOpacity
