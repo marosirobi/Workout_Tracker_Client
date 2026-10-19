@@ -32,6 +32,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const MOVING_TIMEOUT_MS = 6000;
+
 export default function ActiveWorkoutScreen() {
   const router = useRouter();
   const {
@@ -44,6 +46,7 @@ export default function ActiveWorkoutScreen() {
     elevationGain,
     currentSpeedMs,
     pausedAt,
+    lastMovedAt,
     totalPausedMs,
     addExercise,
     addSet,
@@ -51,6 +54,7 @@ export default function ActiveWorkoutScreen() {
     clearActiveWorkout,
     pauseWorkout,
     resumeWorkout,
+    beginFinish,
   } = useWorkoutStore();
 
   const [now, setNow] = useState(() => Date.now());
@@ -142,7 +146,10 @@ export default function ActiveWorkoutScreen() {
   }, []);
 
   const avgPaceMinutes = getAvgPaceMinutes(elapsedSeconds, totalDistanceKm);
-  const currentPaceMinutes = getCurrentPaceMinutes(currentSpeedMs);
+  const isMoving =
+    lastMovedAt !== null && now - lastMovedAt < MOVING_TIMEOUT_MS;
+  const liveSpeedMs = isMoving ? currentSpeedMs : 0;
+  const currentPaceMinutes = getCurrentPaceMinutes(liveSpeedMs);
 
   const filteredExercises = availableExercises.filter((ex) =>
     ex.exerciseName.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -391,7 +398,7 @@ export default function ActiveWorkoutScreen() {
             <View style={styles.metricBox}>
               <Text style={styles.metricLabel}>SEBESSÉG</Text>
               <Text style={styles.metricValue}>
-                {(currentSpeedMs * 3.6).toFixed(1)}
+                {(liveSpeedMs * 3.6).toFixed(1)}
               </Text>
               <Text style={styles.metricUnit}>km/h</Text>
             </View>
@@ -414,7 +421,11 @@ export default function ActiveWorkoutScreen() {
                 styles.secondaryButton,
                 isFinishing && { opacity: 0.6 },
               ]}
-              onPress={handleFinishWorkout}
+              onPress={
+                activeWorkoutType === "CARDIO"
+                  ? beginFinish
+                  : handleFinishWorkout
+              }
               disabled={isFinishing}
             >
               <Text style={styles.controlButtonText}>

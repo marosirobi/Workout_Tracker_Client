@@ -24,6 +24,7 @@ export interface TrackPoint {
   longitude: number;
   elevation: number;
   speed: number;
+  segment: number;
   timestamp: string;
 }
 
@@ -55,9 +56,13 @@ interface ActiveWorkoutData {
   elevationGain: number;
   currentSpeedMs: number;
   lastCoords: LastCoords | null;
+  currentSegment: number;
+  lastMovedAt: number | null;
 
   pausedAt: string | null;
   totalPausedMs: number;
+
+  isAwaitingSave: boolean;
 }
 
 interface WorkoutState extends ActiveWorkoutData {
@@ -77,6 +82,8 @@ interface WorkoutState extends ActiveWorkoutData {
   recordLocation: (sample: LocationSample) => void;
   pauseWorkout: () => void;
   resumeWorkout: () => void;
+  beginFinish: () => void;
+  cancelFinish: () => void;
 }
 
 const EMPTY_WORKOUT: ActiveWorkoutData = {
@@ -89,8 +96,11 @@ const EMPTY_WORKOUT: ActiveWorkoutData = {
   elevationGain: 0,
   currentSpeedMs: 0,
   lastCoords: null,
+  currentSegment: 0,
+  lastMovedAt: null,
   pausedAt: null,
   totalPausedMs: 0,
+  isAwaitingSave: false,
 };
 
 const MAX_ACCURACY_METERS = 25;
@@ -180,6 +190,7 @@ export const useWorkoutStore = create<WorkoutState>()(
             longitude: sample.longitude,
             elevation: Math.round(elevation),
             speed: Number(speed.toFixed(2)),
+            segment: state.currentSegment,
             timestamp: new Date(sample.timestamp).toISOString(),
           };
 
@@ -187,7 +198,7 @@ export const useWorkoutStore = create<WorkoutState>()(
 
           if (!last) {
             return {
-              currentSpeedMs: speed,
+              currentSpeedMs: 0,
               trackPoints: [...state.trackPoints, newPoint],
               lastCoords: {
                 latitude: sample.latitude,
@@ -206,13 +217,20 @@ export const useWorkoutStore = create<WorkoutState>()(
           );
 
           if (stepKm < MIN_STEP_KM) {
-            return { currentSpeedMs: speed };
+            return { currentSpeedMs: 0 };
           }
 
           const dtSec = (sample.timestamp - last.timestamp) / 1000;
-          if (dtSec > 0 && (stepKm * 1000) / dtSec > MAX_SPEED_MS) {
+          const impliedSpeed = dtSec > 0 ? (stepKm * 1000) / dtSec : Infinity;
+          if (impliedSpeed > MAX_SPEED_MS) {
+            const nextSegment = state.currentSegment + 1;
             return {
+              currentSegment: nextSegment,
               currentSpeedMs: 0,
+              trackPoints: [
+                ...state.trackPoints,
+                { ...newPoint, segment: nextSegment },
+              ],
               lastCoords: {
                 latitude: sample.latitude,
                 longitude: sample.longitude,
@@ -235,6 +253,7 @@ export const useWorkoutStore = create<WorkoutState>()(
 
           return {
             currentSpeedMs: speed,
+            lastMovedAt: Date.now(),
             totalDistanceKm: state.totalDistanceKm + stepKm,
             elevationGain: state.elevationGain + climbed,
             trackPoints: [...state.trackPoints, newPoint],
@@ -261,8 +280,22 @@ export const useWorkoutStore = create<WorkoutState>()(
             pausedAt: null,
             totalPausedMs: state.totalPausedMs + pausedForMs,
             lastCoords: null,
+            lastMovedAt: null,
+            currentSegment: state.currentSegment + 1,
           };
         }),
+
+      beginFinish: () =>
+        set((state) => {
+          if (!state.activeWorkoutId) return state;
+          return {
+            isAwaitingSave: true,
+            pausedAt: state.pausedAt ?? new Date().toISOString(),
+            currentSpeedMs: 0,
+          };
+        }),
+
+      cancelFinish: () => set({ isAwaitingSave: false }),
     }),
     {
       name: "workout-storage",

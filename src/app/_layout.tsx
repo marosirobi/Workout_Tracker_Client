@@ -1,13 +1,12 @@
 import { startWorkoutLiveSync } from "@/services/live/workoutLiveSync";
 import { syncLocationTrackingWithStore } from "@/services/locationTask";
-
 import { useAuthStore } from "@/store/authStore";
 import { useWorkoutStore } from "@/store/workoutStore";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 export default function RootLayout() {
-  const { activeWorkoutId } = useWorkoutStore();
+  const { activeWorkoutId, isAwaitingSave } = useWorkoutStore();
   const { user } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
@@ -44,13 +43,18 @@ export default function RootLayout() {
     }
 
     if (user) {
-      if (activeWorkoutId && !isActiveWorkoutScreen) {
-        router.replace("/active-workout" as any);
-      } else if (!activeWorkoutId && isActiveWorkoutScreen) {
+      const isSaveScreen = segments[0] === "save-workout";
+
+      if (activeWorkoutId) {
+        const target = isAwaitingSave ? "save-workout" : "active-workout";
+        if (segments[0] !== target) {
+          router.replace(`/${target}` as any);
+        }
+      } else if (isActiveWorkoutScreen || isSaveScreen) {
         router.replace("/dashboard" as any);
       }
     }
-  }, [isReady, user, activeWorkoutId, segments, router]);
+  }, [user, activeWorkoutId, segments, router, isAwaitingSave, isReady]);
 
   if (!isReady) {
     return (
@@ -73,6 +77,7 @@ export default function RootLayout() {
       <Stack.Screen name="register" />
       <Stack.Screen name="dashboard" />
       <Stack.Screen name="active-workout" options={{ gestureEnabled: false }} />
+      <Stack.Screen name="save-workout" options={{ gestureEnabled: false }} />
     </Stack>
   );
 }
