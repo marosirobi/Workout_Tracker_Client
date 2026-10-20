@@ -2,9 +2,12 @@ import { exerciseService } from "@/api/exerciseService";
 import { workoutService } from "@/api/workoutService";
 import { prepareLiveDisplay } from "@/services/live/workoutLiveSync";
 import {
-  startLocationTracking,
-  stopLocationTracking,
+  startLocationTracking
 } from "@/services/locationTask";
+import {
+  discardActiveWorkout,
+  endActiveWorkoutLocally,
+} from "@/services/workoutActions";
 import {
   getElapsedSeconds,
   useWorkoutStore,
@@ -125,9 +128,14 @@ export default function ActiveWorkoutScreen() {
           text: "Megszakitas",
           style: "destructive",
           onPress: async () => {
-            await stopLocationTracking();
-            clearActiveWorkout();
-            router.replace("/dashboard");
+            try {
+              await discardActiveWorkout();
+            } catch {
+              Alert.alert(
+                "Sikertelen elvetés",
+                "Nem sikerült törölni az edzést a szerverről. Ellenőrizd az internetkapcsolatot!",
+              );
+            }
           },
         },
       ]);
@@ -296,9 +304,7 @@ export default function ActiveWorkoutScreen() {
 
         await workoutService.updateWorkout(activeWorkoutId, updateRequest);
       }
-      await stopLocationTracking();
-      clearActiveWorkout();
-      router.replace("/dashboard");
+      await endActiveWorkoutLocally();
     } catch (error: any) {
       console.error(
         "Hiba az edzes befejezesekor. A szerver válasza:",
@@ -312,9 +318,7 @@ export default function ActiveWorkoutScreen() {
             {
               text: "Rendben",
               onPress: async () => {
-                await stopLocationTracking();
-                clearActiveWorkout();
-                router.replace("/dashboard");
+                await endActiveWorkoutLocally();
               },
             },
           ],

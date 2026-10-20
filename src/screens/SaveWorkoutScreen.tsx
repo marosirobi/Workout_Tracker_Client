@@ -1,20 +1,23 @@
 import { workoutService } from "@/api/workoutService";
-import { stopLocationTracking } from "@/services/locationTask";
+import {
+  discardActiveWorkout,
+  endActiveWorkoutLocally,
+} from "@/services/workoutActions";
 import { getElapsedSeconds, useWorkoutStore } from "@/store/workoutStore";
 import { getAvgPaceMinutes } from "@/utils/workoutFormat";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    BackHandler,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  BackHandler,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -31,7 +34,6 @@ export default function SaveWorkoutScreen() {
     elevationGain,
     trackPoints,
     cancelFinish,
-    clearActiveWorkout,
   } = useWorkoutStore();
 
   const [title, setTitle] = useState("");
@@ -50,11 +52,6 @@ export default function SaveWorkoutScreen() {
     );
     return () => subscription.remove();
   }, [cancelFinish, isBusy]);
-
-  const finishLocally = async () => {
-    await stopLocationTracking();
-    clearActiveWorkout();
-  };
 
   const handleSave = async () => {
     if (!activeWorkoutId || isBusy) return;
@@ -81,7 +78,7 @@ export default function SaveWorkoutScreen() {
         trackPoints,
       });
 
-      await finishLocally();
+      await endActiveWorkoutLocally();
     } catch (error: any) {
       console.error("Mentési hiba:", error.response?.data || error.message);
       const status = error.response?.status;
@@ -89,7 +86,7 @@ export default function SaveWorkoutScreen() {
         Alert.alert(
           "Az edzés nem található",
           "Ez az edzés már nem létezik a szerveren. A helyi adatok törlésre kerülnek.",
-          [{ text: "Rendben", onPress: finishLocally }],
+          [{ text: "Rendben", onPress: endActiveWorkoutLocally }],
         );
         return;
       }
@@ -107,13 +104,8 @@ export default function SaveWorkoutScreen() {
     setIsDiscarding(true);
 
     try {
-      await workoutService.deleteWorkout(activeWorkoutId);
-      await finishLocally();
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        await finishLocally();
-        return;
-      }
+      await discardActiveWorkout();
+    } catch {
       Alert.alert(
         "Sikertelen elvetés",
         "Nem sikerült törölni az edzést a szerverről. Ellenőrizd az internetkapcsolatot!",
