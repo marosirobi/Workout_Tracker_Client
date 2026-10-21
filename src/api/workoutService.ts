@@ -27,20 +27,32 @@ export interface WorkoutExerciseDetail {
   sets: ExerciseSetDetail[];
 }
 
+export interface CardioStatsResponse {
+  totalDistance: number;
+  avgPace: string;
+  movingTimeSeconds: number;
+  elevationGain: number;
+}
+
+export interface TrackPointResponse {
+  latitude: number;
+  longitude: number;
+  elevation: number;
+  speed: number;
+  timestamp: string;
+  segment: number;
+}
+
 export interface WorkoutDetailResponse {
   id: number;
   workoutTitle: string;
   workoutNote: string | null;
   type: "STRENGTH" | "CARDIO";
   startTime: string;
-  endTime: string;
-  exercises?: WorkoutDetailResponse[];
-  cardioStats?: {
-    totalDistance: number;
-    avgPace: string;
-    movingTimeSeconds: number;
-    elevationGain: number;
-  } | null;
+  endTime: string | null;
+  exercises?: WorkoutExerciseDetail[];
+  cardioStats?: CardioStatsResponse | null;
+  trackPoints?: TrackPointResponse[];
 }
 
 export interface PageResponse<T> {

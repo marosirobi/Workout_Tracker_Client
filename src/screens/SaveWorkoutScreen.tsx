@@ -78,7 +78,7 @@ export default function SaveWorkoutScreen() {
         trackPoints,
       });
 
-      await endActiveWorkoutLocally();
+      await endActiveWorkoutLocally(activeWorkoutId);
     } catch (error: any) {
       console.error("Mentési hiba:", error.response?.data || error.message);
       const status = error.response?.status;
@@ -86,7 +86,7 @@ export default function SaveWorkoutScreen() {
         Alert.alert(
           "Az edzés nem található",
           "Ez az edzés már nem létezik a szerveren. A helyi adatok törlésre kerülnek.",
-          [{ text: "Rendben", onPress: endActiveWorkoutLocally }],
+          [{ text: "Rendben", onPress: () => endActiveWorkoutLocally() }],
         );
         return;
       }

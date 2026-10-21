@@ -63,6 +63,7 @@ interface ActiveWorkoutData {
   totalPausedMs: number;
 
   isAwaitingSave: boolean;
+  lastSavedWorkoutId: number | null;
 }
 
 interface WorkoutState extends ActiveWorkoutData {
@@ -84,6 +85,7 @@ interface WorkoutState extends ActiveWorkoutData {
   resumeWorkout: () => void;
   beginFinish: () => void;
   cancelFinish: () => void;
+  completeSave: (workoutId: number) => void;
 }
 
 const EMPTY_WORKOUT: ActiveWorkoutData = {
@@ -101,6 +103,7 @@ const EMPTY_WORKOUT: ActiveWorkoutData = {
   pausedAt: null,
   totalPausedMs: 0,
   isAwaitingSave: false,
+  lastSavedWorkoutId: null,
 };
 
 const MAX_ACCURACY_METERS = 25;
@@ -296,6 +299,9 @@ export const useWorkoutStore = create<WorkoutState>()(
         }),
 
       cancelFinish: () => set({ isAwaitingSave: false }),
+
+      completeSave: (workoutId) =>
+        set({ ...EMPTY_WORKOUT, lastSavedWorkoutId: workoutId }),
     }),
     {
       name: "workout-storage",

@@ -1,38 +1,83 @@
-import { workoutService } from "@/api/workoutService";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  workoutService,
+  type WorkoutDetailResponse,
+} from "@/api/workoutService";
+import { KeyStats } from "@/components/summary/KeyStats";
+import { RouteMap } from "@/components/summary/RouteMap";
+import { StatRows } from "@/components/summary/StatRows";
+import { computeCardioSummary } from "@/utils/workoutAnalysis";
+import { formatDuration, formatPace } from "@/utils/workoutFormat";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  BackHandler,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+function formatWorkoutDate(iso: string): string {
+  return new Date(iso).toLocaleString("hu-HU", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export default function WorkoutDetailsScreen() {
-  const { id } = useLocalSearchParams();
+  const { id, fresh } = useLocalSearchParams<{ id: string; fresh?: string }>();
+  const isFresh = fresh === "1";
   const router = useRouter();
 
-  const [workout, setWorkout] = useState<any>(null);
+  const [workout, setWorkout] = useState<WorkoutDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const close = useCallback(() => {
+    if (isFresh) {
+      router.replace("/dashboard");
+    } else {
+      router.back();
+    }
+  }, [isFresh, router]);
+
   useEffect(() => {
-    const fetchWorkoutDetails = async () => {
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        close();
+        return true;
+      },
+    );
+    return () => subscription.remove();
+  }, [close]);
+
+  useEffect(() => {
+    const fetchWorkout = async () => {
       try {
         const data = await workoutService.getWorkoutById(Number(id));
         setWorkout(data);
       } catch (error) {
         console.error("Hiba a részletek letöltésekor", error);
         Alert.alert("Hiba", "Nem sikerült betölteni az edzést.");
-        router.back();
+        close();
       } finally {
         setLoading(false);
       }
     };
-    fetchWorkoutDetails();
-  }, [id]);
+    fetchWorkout();
+  }, [id, close]);
+
+  const summary = useMemo(
+    () => (workout?.type === "CARDIO" ? computeCardioSummary(workout) : null),
+    [workout],
+  );
 
   const handleDelete = () => {
     Alert.alert("Törlés", "Biztosan törölni szeretnéd ezt az edzést?", [
@@ -44,7 +89,7 @@ export default function WorkoutDetailsScreen() {
           try {
             await workoutService.deleteWorkout(Number(id));
             router.replace("/dashboard");
-          } catch (error) {
+          } catch {
             Alert.alert("Hiba", "Nem sikerült törölni az edzést.");
           }
         },
@@ -54,140 +99,154 @@ export default function WorkoutDetailsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007BFF" />
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#FC4C02" />
       </View>
     );
   }
 
   if (!workout) return null;
 
+  const typeLabel = workout.type === "CARDIO" ? "Kardió" : "Erőedzés";
+
   return (
-    <ScrollView style={styles.container}>
-      {/* FEJLÉC */}
-      <View style={styles.header}>
-        <Text style={styles.title}>{workout.workoutTitle}</Text>
-        <Text style={styles.date}>
-          {new Date(workout.startTime).toLocaleString("hu-HU")}
-        </Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>
-            {workout.type === "STRENGTH" ? "💪 SÚLYZÓS" : "🏃 KARDIÓ"}
-          </Text>
-        </View>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={close} hitSlop={12}>
+          <Text style={styles.topBarAction}>{isFresh ? "Kész" : "Vissza"}</Text>
+        </TouchableOpacity>
       </View>
 
-      {workout.type === "STRENGTH" && workout.exercises && (
-        <View style={styles.section}>
-          {workout.exercises.map((exercise: any) => (
-            <View key={exercise.id} style={styles.exerciseCard}>
-              <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
-              {exercise.sets.map((set: any) => (
-                <View key={set.id} style={styles.setRow}>
-                  <Text style={styles.setText}>{set.setNumber}. Szett</Text>
-                  <Text style={styles.setText}>{set.weight} kg</Text>
-                  <Text style={styles.setText}>{set.reps} ism.</Text>
+      <ScrollView contentContainerStyle={styles.content}>
+        {workout.type === "CARDIO" && (
+          <RouteMap points={workout.trackPoints ?? []} />
+        )}
+        <View style={styles.body}>
+          {isFresh && <Text style={styles.congrats}>Szép munka!</Text>}
+
+          <Text style={styles.title}>{workout.workoutTitle || typeLabel}</Text>
+          <Text style={styles.meta}>
+            {formatWorkoutDate(workout.startTime)} · {typeLabel}
+          </Text>
+          {workout.workoutNote ? (
+            <Text style={styles.note}>{workout.workoutNote}</Text>
+          ) : null}
+
+          {summary && (
+            <View style={styles.section}>
+              <KeyStats
+                items={[
+                  {
+                    label: "Táv",
+                    value: summary.distanceKm.toFixed(2),
+                    unit: "km",
+                  },
+                  {
+                    label: "Átl. tempó",
+                    value: formatPace(summary.avgPaceMinPerKm),
+                    unit: "/km",
+                  },
+                  {
+                    label: "Mozgásidő",
+                    value: formatDuration(summary.movingSeconds),
+                  },
+                ]}
+              />
+              <StatRows
+                rows={[
+                  {
+                    label: "Teljes idő",
+                    value: formatDuration(summary.elapsedSeconds),
+                  },
+                  {
+                    label: "Átl. sebesség",
+                    value: `${summary.avgSpeedKmh.toFixed(1)} km/h`,
+                  },
+                  {
+                    label: "Max. sebesség",
+                    value: `${summary.maxSpeedKmh.toFixed(1)} km/h`,
+                  },
+                  {
+                    label: "Szintemelkedés",
+                    value: `${Math.round(summary.elevationGain)} m`,
+                  },
+                ]}
+              />
+            </View>
+          )}
+
+          {workout.type === "STRENGTH" && workout.exercises && (
+            <View style={styles.section}>
+              {workout.exercises.map((exercise) => (
+                <View key={exercise.id} style={styles.exerciseCard}>
+                  <Text style={styles.exerciseName}>
+                    {exercise.exerciseName}
+                  </Text>
+                  {exercise.sets.map((set) => (
+                    <View key={set.id} style={styles.setRow}>
+                      <Text style={styles.setText}>{set.setNumber}. szett</Text>
+                      <Text style={styles.setText}>{set.weight} kg</Text>
+                      <Text style={styles.setText}>{set.reps} ism.</Text>
+                    </View>
+                  ))}
                 </View>
               ))}
             </View>
-          ))}
-        </View>
-      )}
+          )}
 
-      {workout.type === "CARDIO" && workout.cardioStats && (
-        <View style={styles.cardioGrid}>
-          <View style={styles.cardioBox}>
-            <Text style={styles.cardioLabel}>Távolság</Text>
-            <Text style={styles.cardioValue}>
-              {workout.cardioStats.totalDistance} km
-            </Text>
-          </View>
-          <View style={styles.cardioBox}>
-            <Text style={styles.cardioLabel}>Átlagtempó</Text>
-            <Text style={styles.cardioValue}>
-              {workout.cardioStats.avgPace} p/km
-            </Text>
-          </View>
-          <View style={styles.cardioBox}>
-            <Text style={styles.cardioLabel}>Szintemelkedés</Text>
-            <Text style={styles.cardioValue}>
-              {workout.cardioStats.elevationGain} m
-            </Text>
-          </View>
+          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+            <Text style={styles.deleteText}>Edzés törlése</Text>
+          </TouchableOpacity>
         </View>
-      )}
-
-      <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-        <Text style={styles.deleteButtonText}>Edzés Törlése</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#121212", padding: 20 },
-  centerContainer: {
+  container: { flex: 1, backgroundColor: "#121212" },
+  center: {
     flex: 1,
     backgroundColor: "#121212",
     justifyContent: "center",
     alignItems: "center",
   },
-  header: { marginBottom: 30, alignItems: "center", paddingTop: 40 },
-  title: { color: "white", fontSize: 28, fontWeight: "bold", marginBottom: 5 },
-  date: { color: "#888", fontSize: 16, marginBottom: 15 },
-  badge: {
-    backgroundColor: "#007BFF",
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-    borderRadius: 20,
+  topBar: { paddingHorizontal: 20, paddingVertical: 12 },
+  topBarAction: { color: "#FC4C02", fontSize: 16, fontWeight: "600" },
+  content: { paddingBottom: 40 },
+  congrats: {
+    color: "#FC4C02",
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 6,
   },
-  badgeText: { color: "white", fontWeight: "bold", fontSize: 12 },
-  section: { marginBottom: 20 },
-
+  title: { color: "#FFF", fontSize: 26, fontWeight: "800" },
+  meta: { color: "#8E8E93", fontSize: 14, marginTop: 4 },
+  note: { color: "#C7C7CC", fontSize: 15, lineHeight: 21, marginTop: 12 },
+  section: { marginTop: 20 },
   exerciseCard: {
-    backgroundColor: "#1e1e1e",
-    borderRadius: 10,
+    backgroundColor: "#1E1E1E",
+    borderRadius: 12,
     padding: 15,
-    marginBottom: 15,
+    marginBottom: 12,
   },
   exerciseName: {
-    color: "#007BFF",
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
+    color: "#FFF",
+    fontSize: 17,
+    fontWeight: "700",
+    marginBottom: 8,
   },
   setRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#333",
     paddingVertical: 8,
   },
-  setText: { color: "white", fontSize: 16 },
-
-  cardioGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  cardioBox: {
-    backgroundColor: "#1e1e1e",
-    width: "48%",
-    borderRadius: 10,
-    padding: 20,
-    marginBottom: 15,
-    alignItems: "center",
-  },
-  cardioLabel: { color: "#888", fontSize: 14, marginBottom: 5 },
-  cardioValue: { color: "white", fontSize: 22, fontWeight: "bold" },
-
-  deleteButton: {
-    marginTop: 20,
-    marginBottom: 50,
-    backgroundColor: "#FF4444",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  deleteButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
+  setText: { color: "#FFF", fontSize: 15 },
+  deleteButton: { alignItems: "center", paddingVertical: 18, marginTop: 24 },
+  deleteText: { color: "#FF453A", fontSize: 16, fontWeight: "600" },
+  body: { paddingHorizontal: 20, paddingTop: 16 },
 });
