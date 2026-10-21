@@ -4,8 +4,9 @@ import {
 } from "@/api/workoutService";
 import { KeyStats } from "@/components/summary/KeyStats";
 import { RouteMap } from "@/components/summary/RouteMap";
+import { SplitsTable } from "@/components/summary/SplitsTable";
 import { StatRows } from "@/components/summary/StatRows";
-import { computeCardioSummary } from "@/utils/workoutAnalysis";
+import { computeCardioSummary, computeSplits } from "@/utils/workoutAnalysis";
 import { formatDuration, formatPace } from "@/utils/workoutFormat";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -76,6 +77,14 @@ export default function WorkoutDetailsScreen() {
 
   const summary = useMemo(
     () => (workout?.type === "CARDIO" ? computeCardioSummary(workout) : null),
+    [workout],
+  );
+
+  const splits = useMemo(
+    () =>
+      workout?.type === "CARDIO"
+        ? computeSplits(workout.trackPoints ?? [])
+        : [],
     [workout],
   );
 
@@ -172,6 +181,7 @@ export default function WorkoutDetailsScreen() {
                   },
                 ]}
               />
+              <SplitsTable splits={splits} />
             </View>
           )}
 
