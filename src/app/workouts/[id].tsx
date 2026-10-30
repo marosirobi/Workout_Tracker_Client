@@ -2,11 +2,17 @@ import {
   workoutService,
   type WorkoutDetailResponse,
 } from "@/api/workoutService";
+import { BestEfforts } from "@/components/summary/BestEfforts";
 import { KeyStats } from "@/components/summary/KeyStats";
+import { PaceChart } from "@/components/summary/PaceChart";
 import { RouteMap } from "@/components/summary/RouteMap";
 import { SplitsTable } from "@/components/summary/SplitsTable";
 import { StatRows } from "@/components/summary/StatRows";
-import { computeCardioSummary, computeSplits } from "@/utils/workoutAnalysis";
+import {
+  computeCardioSummary,
+  computePaceSeries,
+  computeSplits,
+} from "@/utils/workoutAnalysis";
 import { formatDuration, formatPace } from "@/utils/workoutFormat";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -84,6 +90,14 @@ export default function WorkoutDetailsScreen() {
     () =>
       workout?.type === "CARDIO"
         ? computeSplits(workout.trackPoints ?? [])
+        : [],
+    [workout],
+  );
+
+  const paceSeries = useMemo(
+    () =>
+      workout?.type === "CARDIO"
+        ? computePaceSeries(workout.trackPoints ?? [])
         : [],
     [workout],
   );
@@ -182,6 +196,11 @@ export default function WorkoutDetailsScreen() {
                 ]}
               />
               <SplitsTable splits={splits} />
+              <BestEfforts efforts={workout.bestEfforts ?? []} />
+              <PaceChart
+                series={paceSeries}
+                avgPace={summary.avgPaceMinPerKm}
+              />
             </View>
           )}
 

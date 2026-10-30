@@ -25,6 +25,15 @@ export interface Split {
   pacedMinPerKm: number;
 }
 
+export interface PacePoint {
+  distanceKm: number;
+  paceMinPerKm: number;
+}
+
+const PACE_WINDOW_SEC = 30;
+const MIN_PACE_WINDOW_SEC = 5;
+const SLOWEST_SHOWN_PACE = 15;
+
 // szegmensekre bontas, hogy szunet sebessege ne legyen szamolva
 export function splitIntoSegments(
   points: TrackPointResponse[],
@@ -45,22 +54,28 @@ export function splitIntoSegments(
   return segments;
 }
 
+function cumulativeMeters(segment: TrackPointResponse[]): number[] {
+  const cumMeters = [0];
+  for (let i = 1; i < segment.length; i++) {
+    const a = segment[i - 1];
+    const b = segment[i];
+    cumMeters.push(
+      cumMeters[i - 1] +
+        calculateDistance(a.latitude, a.longitude, b.latitude, b.longitude) *
+          1000,
+    );
+  }
+
+  return cumMeters;
+}
+
 export function computeMaxSpeedMs(points: TrackPointResponse[]): number {
   let max = 0;
 
   for (const segment of splitIntoSegments(points)) {
     const times = segment.map((p) => Date.parse(p.timestamp));
 
-    const cumMeters = [0];
-    for (let i = 1; i < segment.length; i++) {
-      const a = segment[i - 1];
-      const b = segment[i];
-      cumMeters.push(
-        cumMeters[i - 1] +
-          calculateDistance(a.latitude, a.longitude, b.latitude, b.longitude) *
-            1000,
-      );
-    }
+    const cumMeters = cumulativeMeters(segment);
 
     let end = 0;
     for (let start = 0; start < segment.length; start++) {
@@ -185,4 +200,37 @@ export function computeSplits(
   }
 
   return splits;
+}
+
+export function computePaceSeries(points: TrackPointResponse[]): PacePoint[][] {
+  const series: PacePoint[][] = [];
+  let distanceOffset = 0;
+  for (const segment of splitIntoSegments(points)) {
+    const times = segment.map((s) => Date.parse(s.timestamp));
+    const cumMeters = cumulativeMeters(segment);
+    const line: PacePoint[] = [];
+
+    let start = 0;
+    for (let end = 1; end < segment.length; end++) {
+      while (
+        start < end &&
+        (times[end] - times[start]) / 1000 > PACE_WINDOW_SEC
+      ) {
+        start++;
+      }
+
+      const dtSec = (times[end] - times[start]) / 1000;
+      const meters = cumMeters[end] - cumMeters[start];
+      if (dtSec < MIN_PACE_WINDOW_SEC || meters < 0) continue;
+
+      const pace = Math.min(dtSec / 60 / (meters / 1000), SLOWEST_SHOWN_PACE);
+      line.push({
+        distanceKm: (distanceOffset + cumMeters[end]) / 1000,
+        paceMinPerKm: pace,
+      });
+    }
+    if (line.length > 0) series.push(line);
+    distanceOffset += cumMeters[cumMeters.length - 1];
+  }
+  return series;
 }

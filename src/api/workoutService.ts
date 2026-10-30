@@ -43,6 +43,13 @@ export interface TrackPointResponse {
   segment: number;
 }
 
+export interface BestEffortResponse {
+  distanceMeters: number;
+  durationSeconds: number;
+  startOffsetMeters: number;
+  rank: number;
+}
+
 export interface WorkoutDetailResponse {
   id: number;
   workoutTitle: string;
@@ -53,6 +60,7 @@ export interface WorkoutDetailResponse {
   exercises?: WorkoutExerciseDetail[];
   cardioStats?: CardioStatsResponse | null;
   trackPoints?: TrackPointResponse[];
+  bestEfforts?: BestEffortResponse[];
 }
 
 export interface PageResponse<T> {
