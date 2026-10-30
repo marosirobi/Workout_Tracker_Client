@@ -3,7 +3,11 @@ import {
   discardActiveWorkout,
   endActiveWorkoutLocally,
 } from "@/services/workoutActions";
-import { getElapsedSeconds, useWorkoutStore } from "@/store/workoutStore";
+import {
+  getElapsedSeconds,
+  useWorkoutStore,
+  type WorkoutExercise,
+} from "@/store/workoutStore";
 import { getAvgPaceMinutes } from "@/utils/workoutFormat";
 import { useEffect, useState } from "react";
 import {
@@ -22,7 +26,26 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const MAX_TEXT_LENGTH = 255;
-const DEFAULT_TITLE = "Cardio";
+const DEFAULT_TITLES = {
+  CARDIO: "Cardio",
+  STRENGTH: "Workout",
+} as const;
+
+function buildStrengthExercises(exercises: WorkoutExercise[]) {
+  return exercises
+    .map((ex) => ({
+      exerciseId: ex.exerciseId,
+      sets: ex.sets
+        .filter((s) => s.isCompleted)
+        .map((s, index) => ({
+          setNumber: index + 1,
+          weight: s.weight,
+          reps: s.reps,
+        })),
+    }))
+    .filter((ex) => ex.sets.length > 0)
+    .map((ex, index) => ({ ...ex, orderIndex: index + 1 }));
+}
 
 export default function SaveWorkoutScreen() {
   const {
@@ -33,6 +56,8 @@ export default function SaveWorkoutScreen() {
     totalDistanceKm,
     elevationGain,
     trackPoints,
+    exercises,
+    activeWorkoutType,
     cancelFinish,
   } = useWorkoutStore();
 
@@ -41,6 +66,7 @@ export default function SaveWorkoutScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
   const isBusy = isSaving || isDiscarding;
+  const defaultTitle = DEFAULT_TITLES[activeWorkoutType ?? "CARDIO"];
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
@@ -53,30 +79,60 @@ export default function SaveWorkoutScreen() {
     return () => subscription.remove();
   }, [cancelFinish, isBusy]);
 
+  const saveStrength = async (workoutId: number, workoutTitle: string) => {
+    await workoutService.updateWorkout(workoutId, {
+      workoutTitle,
+      workoutNote: note.trim || undefined,
+      endTime: new Date().toISOString(),
+      exercises: buildStrengthExercises(exercises),
+    });
+  };
+
+  const saveCardio = async (workoutId: number, workoutTitle: string) => {
+    const movingSeconds = getElapsedSeconds({
+      startTime,
+      pausedAt,
+      totalPausedMs,
+    });
+    await workoutService.saveCardioData(workoutId, {
+      workoutTitle,
+      workoutNote: note.trim() || undefined,
+      endTime: new Date().toISOString(),
+      stats: {
+        totalDistance: Number(totalDistanceKm.toFixed(3)),
+        avgPace: Number(
+          getAvgPaceMinutes(movingSeconds, totalDistanceKm).toFixed(2),
+        ),
+        movingTimeSeconds: movingSeconds,
+        elevationGain: Math.round(elevationGain),
+      },
+      trackPoints,
+    });
+  };
+
   const handleSave = async () => {
     if (!activeWorkoutId || isBusy) return;
-    setIsSaving(true);
 
+    if (
+      activeWorkoutType === "STRENGTH" &&
+      buildStrengthExercises(exercises).length === 0
+    ) {
+      Alert.alert(
+        "Üres edzés",
+        "Egy szettet sem pipáltál ki. Pipáld ki az elvégzett szetteket, vagy vesd el az edzést.",
+      );
+      return;
+    }
+
+    setIsSaving(true);
     try {
-      const movingSeconds = getElapsedSeconds({
-        startTime,
-        pausedAt,
-        totalPausedMs,
-      });
-      await workoutService.saveCardioData(activeWorkoutId, {
-        workoutTitle: title.trim() || DEFAULT_TITLE,
-        workoutNote: note.trim() || undefined,
-        endTime: new Date().toISOString(),
-        stats: {
-          totalDistance: Number(totalDistanceKm.toFixed(3)),
-          avgPace: Number(
-            getAvgPaceMinutes(movingSeconds, totalDistanceKm).toFixed(2),
-          ),
-          movingTimeSeconds: movingSeconds,
-          elevationGain: Math.round(elevationGain),
-        },
-        trackPoints,
-      });
+      const workoutTitle = title.trim() || defaultTitle;
+
+      if (activeWorkoutType === "STRENGTH") {
+        await saveStrength(activeWorkoutId, workoutTitle);
+      } else {
+        await saveCardio(activeWorkoutId, workoutTitle);
+      }
 
       await endActiveWorkoutLocally(activeWorkoutId);
     } catch (error: any) {
@@ -157,7 +213,7 @@ export default function SaveWorkoutScreen() {
             style={styles.input}
             value={title}
             onChangeText={setTitle}
-            placeholder={DEFAULT_TITLE}
+            placeholder={defaultTitle}
             placeholderTextColor="#5A5A5E"
             maxLength={100}
             returnKeyType="next"

@@ -1,13 +1,7 @@
 import { exerciseService } from "@/api/exerciseService";
-import { workoutService } from "@/api/workoutService";
 import { prepareLiveDisplay } from "@/services/live/workoutLiveSync";
-import {
-  startLocationTracking
-} from "@/services/locationTask";
-import {
-  discardActiveWorkout,
-  endActiveWorkoutLocally,
-} from "@/services/workoutActions";
+import { startLocationTracking } from "@/services/locationTask";
+import { discardActiveWorkout } from "@/services/workoutActions";
 import {
   getElapsedSeconds,
   useWorkoutStore,
@@ -68,7 +62,6 @@ export default function ActiveWorkoutScreen() {
   const isPaused = pausedAt !== null;
 
   const [gpsStatus, setGpsStatus] = useState("GPS keres...");
-  const [isFinishing, setIsFinishing] = useState(false);
 
   const [isModalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -263,77 +256,6 @@ export default function ActiveWorkoutScreen() {
     );
   };
 
-  const handleFinishWorkout = async () => {
-    if (!activeWorkoutId || !activeWorkoutType || isFinishing) return;
-    setIsFinishing(true);
-
-    try {
-      const currentEndTime = new Date().toISOString();
-      if (activeWorkoutType === "CARDIO") {
-        await workoutService.saveCardioData(activeWorkoutId, {
-          workoutTitle: "kardio",
-          endTime: currentEndTime,
-          stats: {
-            totalDistance: Number(totalDistanceKm.toFixed(3)),
-            avgPace: Number(avgPaceMinutes.toFixed(2)),
-            movingTimeSeconds: elapsedSeconds,
-            elevationGain: elevationGain,
-          },
-          trackPoints: trackPoints,
-        });
-      } else if (activeWorkoutType === "STRENGTH") {
-        const payloadExercises = exercises.map((ex, index) => {
-          return {
-            exerciseId: ex.exerciseId,
-            orderIndex: index + 1,
-            sets: ex.sets
-              .filter((s) => s.isCompleted)
-              .map((s) => ({
-                setNumber: s.setNumber,
-                weight: s.weight,
-                reps: s.reps,
-              })),
-          };
-        });
-
-        const updateRequest = {
-          workoutTitle: "edzes",
-          endTime: currentEndTime,
-          exercises: payloadExercises,
-        };
-
-        await workoutService.updateWorkout(activeWorkoutId, updateRequest);
-      }
-      await endActiveWorkoutLocally();
-    } catch (error: any) {
-      console.error(
-        "Hiba az edzes befejezesekor. A szerver válasza:",
-        error.response?.data || error.message,
-      );
-      if (error.response?.status === 404 || error.response?.status === 400) {
-        Alert.alert(
-          "Az edzés nem található",
-          "Ez az edzés már nem létezik a szerveren. A helyi adatok törlésre kerülnek.",
-          [
-            {
-              text: "Rendben",
-              onPress: async () => {
-                await endActiveWorkoutLocally();
-              },
-            },
-          ],
-        );
-        return;
-      }
-      Alert.alert(
-        "Sikertelen mentes",
-        "Nem sikerült befejezni az edzést. Ellenőrizd az internetkapcsolatot!",
-      );
-    } finally {
-      setIsFinishing(false);
-    }
-  };
-
   return (
     <View style={styles.container}>
       {isPaused && <Text style={styles.pausedLabel}>PAUSED</Text>}
@@ -362,7 +284,7 @@ export default function ActiveWorkoutScreen() {
         <View style={styles.cardioDashboard}>
           <View style={styles.gpsBadge}>
             <Text style={styles.gpsBadgeText}>
-              📍 {gpsStatus} ({trackPoints.length} pont)
+              GPS: {gpsStatus} ({trackPoints.length} pont)
             </Text>
           </View>
 
@@ -420,21 +342,10 @@ export default function ActiveWorkoutScreen() {
               <Text style={styles.controlButtonText}>▶ Folytatás</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[
-                styles.controlButton,
-                styles.secondaryButton,
-                isFinishing && { opacity: 0.6 },
-              ]}
-              onPress={
-                activeWorkoutType === "CARDIO"
-                  ? beginFinish
-                  : handleFinishWorkout
-              }
-              disabled={isFinishing}
+              style={[styles.controlButton, styles.secondaryButton]}
+              onPress={beginFinish}
             >
-              <Text style={styles.controlButtonText}>
-                {isFinishing ? "Mentés…" : "■  Befejezés"}
-              </Text>
+              <Text style={styles.controlButtonText}>■ Befejezés</Text>
             </TouchableOpacity>
           </>
         ) : (
