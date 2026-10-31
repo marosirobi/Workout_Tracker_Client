@@ -1,4 +1,5 @@
 import { BestEffortResponse } from "@/api/workoutService";
+import { rankLabel } from "@/utils/rankLabel";
 import { formatDuration } from "@/utils/workoutFormat";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -11,13 +12,6 @@ const DISTANCE_LABELS: Record<number, string> = {
   21098: "Félmaraton",
   42195: "Maraton",
 };
-
-function rankLabel(rank: number): string | null {
-  if (rank === 1) return "1. legjobb";
-  if (rank === 2) return "2. legjobb";
-  if (rank === 3) return "3. legjobb";
-  return null;
-}
 
 export function BestEfforts({ efforts }: { efforts: BestEffortResponse[] }) {
   if (efforts.length === 0) return null;

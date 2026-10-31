@@ -65,3 +65,8 @@ export const getCurrentExerciseInfo = (
     setNumber: nextSet ? nextSet.setNumber : exercise.sets.length,
   };
 };
+
+export const formatWeight = (kg: number): string =>
+  `${Math.round(kg * 10) / 10}`;
+export const formatVolume = (kg: number): string =>
+  Math.round(kg).toLocaleString("hu-HU");

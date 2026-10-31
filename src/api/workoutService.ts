@@ -24,6 +24,7 @@ export interface WorkoutExerciseDetail {
   exerciseId: number;
   exerciseName: string;
   orderIndex: number;
+  weightRank: number | null;
   sets: ExerciseSetDetail[];
 }
 

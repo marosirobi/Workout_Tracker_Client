@@ -8,12 +8,19 @@ import { PaceChart } from "@/components/summary/PaceChart";
 import { RouteMap } from "@/components/summary/RouteMap";
 import { SplitsTable } from "@/components/summary/SplitsTable";
 import { StatRows } from "@/components/summary/StatRows";
+import { StrengthExerciseCard } from "@/components/summary/StrengthExerciseCard";
+import { computeStrengthSummary } from "@/utils/strengthAnalysis";
 import {
   computeCardioSummary,
   computePaceSeries,
   computeSplits,
 } from "@/utils/workoutAnalysis";
-import { formatDuration, formatPace } from "@/utils/workoutFormat";
+import {
+  formatDuration,
+  formatPace,
+  formatVolume,
+  formatWeight,
+} from "@/utils/workoutFormat";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -99,6 +106,12 @@ export default function WorkoutDetailsScreen() {
       workout?.type === "CARDIO"
         ? computePaceSeries(workout.trackPoints ?? [])
         : [],
+    [workout],
+  );
+
+  const strengthSummary = useMemo(
+    () =>
+      workout?.type === "STRENGTH" ? computeStrengthSummary(workout) : null,
     [workout],
   );
 
@@ -204,21 +217,45 @@ export default function WorkoutDetailsScreen() {
             </View>
           )}
 
-          {workout.type === "STRENGTH" && workout.exercises && (
+          {strengthSummary && (
             <View style={styles.section}>
-              {workout.exercises.map((exercise) => (
-                <View key={exercise.id} style={styles.exerciseCard}>
-                  <Text style={styles.exerciseName}>
-                    {exercise.exerciseName}
-                  </Text>
-                  {exercise.sets.map((set) => (
-                    <View key={set.id} style={styles.setRow}>
-                      <Text style={styles.setText}>{set.setNumber}. szett</Text>
-                      <Text style={styles.setText}>{set.weight} kg</Text>
-                      <Text style={styles.setText}>{set.reps} ism.</Text>
-                    </View>
-                  ))}
-                </View>
+              <KeyStats
+                items={[
+                  {
+                    label: "Időtartam",
+                    value: formatDuration(strengthSummary.durationSeconds),
+                  },
+                  {
+                    label: "Volumen",
+                    value: formatVolume(strengthSummary.totalVolumeKg),
+                    unit: "kg",
+                  },
+                  {
+                    label: "Szettek",
+                    value: `${strengthSummary.totalSets}`,
+                  },
+                ]}
+              />
+              <StatRows
+                rows={[
+                  {
+                    label: "Ismétlések",
+                    value: `${strengthSummary.totalReps}`,
+                  },
+                  {
+                    label: "Gyakorlatok",
+                    value: `${strengthSummary.exerciseCount}`,
+                  },
+                  {
+                    label: "Legnehezebb súly",
+                    value: `${formatWeight(strengthSummary.heaviestWeightKg)} kg`,
+                  },
+                ]}
+              />
+
+              <Text style={styles.sectionTitle}>GYAKORLATOK</Text>
+              {(workout?.exercises ?? []).map((exercise) => (
+                <StrengthExerciseCard key={exercise.id} exercise={exercise} />
               ))}
             </View>
           )}
@@ -278,4 +315,12 @@ const styles = StyleSheet.create({
   deleteButton: { alignItems: "center", paddingVertical: 18, marginTop: 24 },
   deleteText: { color: "#FF453A", fontSize: 16, fontWeight: "600" },
   body: { paddingHorizontal: 20, paddingTop: 16 },
+  sectionTitle: {
+    color: "#FFF",
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 1,
+    marginTop: 28,
+    marginBottom: 10,
+  },
 });
