@@ -1,4 +1,5 @@
-import { exerciseService } from "@/api/exerciseService";
+import { exerciseService, type Exercise } from "@/api/exerciseService";
+import { ExercisePicker } from "@/components/workout/ExercisePicker";
 import { prepareLiveDisplay } from "@/services/live/workoutLiveSync";
 import { startLocationTracking } from "@/services/locationTask";
 import { discardActiveWorkout } from "@/services/workoutActions";
@@ -20,21 +21,18 @@ import {
   BackHandler,
   FlatList,
   Linking,
-  Modal,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const MOVING_TIMEOUT_MS = 6000;
 
 export default function ActiveWorkoutScreen() {
   const router = useRouter();
   const {
-    activeWorkoutId,
     activeWorkoutType,
     exercises,
     startTime,
@@ -64,8 +62,7 @@ export default function ActiveWorkoutScreen() {
   const [gpsStatus, setGpsStatus] = useState("GPS keres...");
 
   const [isModalVisible, setModalVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [availableExercises, setAvailableExercises] = useState<any[]>([]);
+  const [availableExercises, setAvailableExercises] = useState<Exercise[]>([]);
 
   useEffect(() => {
     if (activeWorkoutType !== "STRENGTH") return;
@@ -152,14 +149,9 @@ export default function ActiveWorkoutScreen() {
   const liveSpeedMs = isMoving ? currentSpeedMs : 0;
   const currentPaceMinutes = getCurrentPaceMinutes(liveSpeedMs);
 
-  const filteredExercises = availableExercises.filter((ex) =>
-    ex.exerciseName.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
-
-  const handleSelectExercise = (exerciseId: number, exerciseName: string) => {
-    addExercise(exerciseId, exerciseName);
+  const handleSelectExercise = (exercise: Exercise) => {
+    addExercise(exercise.id, exercise.exerciseName);
     setModalVisible(false);
-    setSearchQuery("");
   };
 
   const renderSet = (exerciseId: number, set: any) => {
@@ -358,47 +350,13 @@ export default function ActiveWorkoutScreen() {
         )}
       </View>
 
-      <Modal
+      <ExercisePicker
         visible={isModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Válassz gyakorlatot</Text>
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeModalText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search..."
-            placeholderTextColor="#888"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          <FlatList
-            data={filteredExercises}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.modalExerciseRow}
-                onPress={() => handleSelectExercise(item.id, item.exerciseName)}
-              >
-                <Text style={styles.modalExerciseName}>
-                  {item.exerciseName}
-                </Text>
-                <Text style={styles.modalMuscleGroup}>{item.muscleGroup}</Text>
-              </TouchableOpacity>
-            )}
-            ListEmptyComponent={
-              <Text style={styles.emptySearchText}>Nothing was found</Text>
-            }
-          />
-        </SafeAreaView>
-      </Modal>
+        exercises={availableExercises}
+        addedIds={exercises.map((ex) => ex.exerciseId)}
+        onSelect={handleSelectExercise}
+        onClose={() => setModalVisible(false)}
+      />
     </View>
   );
 }
@@ -572,39 +530,4 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   addExerciseButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
-  modalContainer: { flex: 1, backgroundColor: "#121212", padding: 20 },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-    paddingTop: 20,
-  },
-  modalTitle: { color: "white", fontSize: 22, fontWeight: "bold" },
-  closeModalText: { color: "#FF4444", fontSize: 16, fontWeight: "bold" },
-  searchInput: {
-    backgroundColor: "#1e1e1e",
-    color: "white",
-    padding: 15,
-    borderRadius: 10,
-    fontSize: 16,
-    marginBottom: 15,
-  },
-  modalExerciseRow: {
-    backgroundColor: "#1e1e1e",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  modalExerciseName: { color: "white", fontSize: 18, fontWeight: "bold" },
-  modalMuscleGroup: { color: "#888", fontSize: 14 },
-  emptySearchText: {
-    color: "#888",
-    textAlign: "center",
-    marginTop: 20,
-    fontSize: 16,
-  },
 });
