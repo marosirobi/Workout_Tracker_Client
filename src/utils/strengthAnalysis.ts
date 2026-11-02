@@ -1,7 +1,9 @@
 import type {
-    ExerciseSetDetail,
-    WorkoutDetailResponse,
+  ExerciseSetDetail,
+  WorkoutDetailResponse,
+  WorkoutExerciseDetail,
 } from "@/api/workoutService";
+import { MUSCLE_GROUP_ORDER, MuscleGroup } from "./muscleGroups";
 
 export interface StrengthSummary {
   durationSeconds: number;
@@ -10,6 +12,27 @@ export interface StrengthSummary {
   totalReps: number;
   exerciseCount: number;
   heaviestWeightKg: number;
+}
+
+export interface MuscleGroupSets {
+  group: MuscleGroup;
+  sets: number;
+}
+
+export function computeMuscleGroupSets(
+  exercises: WorkoutExerciseDetail[],
+): MuscleGroupSets[] {
+  const counts = new Map<MuscleGroup, number>();
+
+  for (const exercise of exercises) {
+    if (!exercise.muscleGroup || exercise.sets.length === 0) continue;
+    const prevCount = counts.get(exercise.muscleGroup) ?? 0;
+    counts.set(exercise.muscleGroup, prevCount + exercise.sets.length);
+  }
+
+  return MUSCLE_GROUP_ORDER.filter((group) => counts.has(group))
+    .map((group) => ({ group, sets: counts.get(group)! }))
+    .sort((a, b) => b.sets - a.sets);
 }
 
 export const setVolume = (set: ExerciseSetDetail): number =>

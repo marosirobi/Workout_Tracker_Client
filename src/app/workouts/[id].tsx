@@ -4,12 +4,16 @@ import {
 } from "@/api/workoutService";
 import { BestEfforts } from "@/components/summary/BestEfforts";
 import { KeyStats } from "@/components/summary/KeyStats";
+import { MuscleGroupList } from "@/components/summary/MuscleGroupList";
 import { PaceChart } from "@/components/summary/PaceChart";
 import { RouteMap } from "@/components/summary/RouteMap";
 import { SplitsTable } from "@/components/summary/SplitsTable";
 import { StatRows } from "@/components/summary/StatRows";
 import { StrengthExerciseCard } from "@/components/summary/StrengthExerciseCard";
-import { computeStrengthSummary } from "@/utils/strengthAnalysis";
+import {
+  computeMuscleGroupSets,
+  computeStrengthSummary,
+} from "@/utils/strengthAnalysis";
 import {
   computeCardioSummary,
   computePaceSeries,
@@ -112,6 +116,14 @@ export default function WorkoutDetailsScreen() {
   const strengthSummary = useMemo(
     () =>
       workout?.type === "STRENGTH" ? computeStrengthSummary(workout) : null,
+    [workout],
+  );
+
+  const muscleGroupSets = useMemo(
+    () =>
+      workout?.type === "STRENGTH"
+        ? computeMuscleGroupSets(workout.exercises ?? [])
+        : [],
     [workout],
   );
 
@@ -252,6 +264,7 @@ export default function WorkoutDetailsScreen() {
                   },
                 ]}
               />
+              <MuscleGroupList items={muscleGroupSets} />
 
               <Text style={styles.sectionTitle}>GYAKORLATOK</Text>
               {(workout?.exercises ?? []).map((exercise) => (

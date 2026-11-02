@@ -1,3 +1,4 @@
+import { MuscleGroup } from "@/utils/muscleGroups";
 import { axiosClient } from "./axiosClient";
 
 export interface WorkoutSummary {
@@ -24,6 +25,7 @@ export interface WorkoutExerciseDetail {
   exerciseId: number;
   exerciseName: string;
   orderIndex: number;
+  muscleGroup: MuscleGroup | null;
   weightRank: number | null;
   sets: ExerciseSetDetail[];
 }
