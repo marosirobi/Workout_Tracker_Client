@@ -1,5 +1,5 @@
 import { workoutService } from "@/api/workoutService";
-import { useWorkoutStore } from "@/store/workoutStore";
+import { useWorkoutStore, type WorkoutType } from "@/store/workoutStore";
 import { stopLocationTracking } from "./locationTask";
 
 export async function endActiveWorkoutLocally(
@@ -26,4 +26,16 @@ export async function discardActiveWorkout(): Promise<void> {
     }
   }
   await endActiveWorkoutLocally();
+}
+
+export async function startWorkout(type: WorkoutType): Promise<void> {
+  const created = await workoutService.createWorkout({
+    type,
+    startTime: new Date().toISOString(),
+    templateId: null,
+  });
+
+  useWorkoutStore
+    .getState()
+    .setActiveWorkout(created.id, created.type, created.startTime);
 }

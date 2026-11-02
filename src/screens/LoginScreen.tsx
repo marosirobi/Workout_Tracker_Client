@@ -27,7 +27,7 @@ export default function LoginScreen() {
     try {
       const { user, token } = await authService.login(email, password);
       setAuth(user, token);
-      router.replace("/dashboard");
+      router.replace("/");
     } catch (error: any) {
       const errorMessage = error.response?.data || error.message || error;
       console.error("HIBA: ", error.response?.data || error.message || error);

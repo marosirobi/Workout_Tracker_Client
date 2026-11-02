@@ -5,6 +5,7 @@ import { useWorkoutStore } from "@/store/workoutStore";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
+
 export default function RootLayout() {
   const { activeWorkoutId, isAwaitingSave, lastSavedWorkoutId } =
     useWorkoutStore();
@@ -39,7 +40,7 @@ export default function RootLayout() {
     }
 
     if (user && isAuthScreen) {
-      router.replace("/dashboard" as any);
+      router.replace("/" as any);
       return;
     }
 
@@ -55,7 +56,7 @@ export default function RootLayout() {
         router.replace(
           lastSavedWorkoutId
             ? `/workouts/${lastSavedWorkoutId}?fresh=1`
-            : ("/dashboard" as any),
+            : ("/" as any),
         );
       }
     }
@@ -88,7 +89,7 @@ export default function RootLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="login" />
       <Stack.Screen name="register" />
-      <Stack.Screen name="dashboard" />
+      <Stack.Screen name="(tabs)" />
       <Stack.Screen name="active-workout" options={{ gestureEnabled: false }} />
       <Stack.Screen name="save-workout" options={{ gestureEnabled: false }} />
     </Stack>

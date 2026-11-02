@@ -59,7 +59,7 @@ export default function WorkoutDetailsScreen() {
 
   const close = useCallback(() => {
     if (isFresh) {
-      router.replace("/dashboard");
+      router.replace("/");
     } else {
       router.back();
     }
@@ -136,7 +136,7 @@ export default function WorkoutDetailsScreen() {
         onPress: async () => {
           try {
             await workoutService.deleteWorkout(Number(id));
-            router.replace("/dashboard");
+            router.replace("/");
           } catch {
             Alert.alert("Hiba", "Nem sikerült törölni az edzést.");
           }

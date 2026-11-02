@@ -1,19 +1,19 @@
 import type { Exercise } from "@/api/exerciseService";
 import {
-    MUSCLE_GROUP_LABELS,
-    MUSCLE_GROUP_ORDER,
-    MuscleGroup,
+  MUSCLE_GROUP_LABELS,
+  MUSCLE_GROUP_ORDER,
+  MuscleGroup,
 } from "@/utils/muscleGroups";
 import { useMemo, useState } from "react";
 import {
-    Modal,
-    ScrollView,
-    SectionList,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Modal,
+  ScrollView,
+  SectionList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -132,7 +132,9 @@ export function ExercisePicker({
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.listContent}
           renderSectionHeader={({ section }) => (
-            <Text>{section.title.toUpperCase()}</Text>
+            <Text style={styles.sectionHeader}>
+              {section.title.toUpperCase()}
+            </Text>
           )}
           renderItem={({ item }) => {
             const isAdded = addedIds.includes(item.id);
@@ -192,8 +194,8 @@ const styles = StyleSheet.create({
   chipTextActive: { color: "#FFF" },
   listContent: { paddingBottom: 40 },
   sectionHeader: {
-    color: "#8E8E93",
-    fontSize: 12,
+    color: "#8E8E92",
+    fontSize: 16,
     fontWeight: "800",
     letterSpacing: 1,
     backgroundColor: "#121212",
