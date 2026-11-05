@@ -1,6 +1,15 @@
 import { workoutService } from "@/api/workoutService";
-import { useWorkoutStore, type WorkoutType } from "@/store/workoutStore";
+import {
+  useWorkoutStore,
+  WorkoutExercise,
+  type WorkoutType,
+} from "@/store/workoutStore";
 import { stopLocationTracking } from "./locationTask";
+
+export interface TemplateToStart {
+  id: number;
+  name: string;
+}
 
 export async function endActiveWorkoutLocally(
   savedWorkoutId?: number,
@@ -28,14 +37,32 @@ export async function discardActiveWorkout(): Promise<void> {
   await endActiveWorkoutLocally();
 }
 
-export async function startWorkout(type: WorkoutType): Promise<void> {
+export async function startWorkout(
+  type: WorkoutType,
+  template?: TemplateToStart,
+): Promise<void> {
   const created = await workoutService.createWorkout({
     type,
     startTime: new Date().toISOString(),
-    templateId: null,
+    templateId: template?.id ?? null,
   });
+
+  const exercises: WorkoutExercise[] = (created.exercises ?? []).map((ex) => ({
+    exerciseId: ex.exerciseId,
+    exerciseName: ex.exerciseName,
+    orderIndex: ex.orderIndex,
+    sets: ex.sets.map((set) => ({
+      setNumber: set.setNumber,
+      weight: set.weight,
+      reps: set.reps,
+      isCompleted: false,
+    })),
+  }));
 
   useWorkoutStore
     .getState()
-    .setActiveWorkout(created.id, created.type, created.startTime);
+    .setActiveWorkout(created.id, created.type, created.startTime, {
+      exercises,
+      templateName: template?.name ?? null,
+    });
 }

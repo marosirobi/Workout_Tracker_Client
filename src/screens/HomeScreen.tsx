@@ -1,123 +1,167 @@
 import { workoutService, WorkoutSummary } from "@/api/workoutService";
+import { FilterChips, FilterOption } from "@/components/FilterChips";
+import { WorkoutCard } from "@/components/home/WorkoutCard";
 import { useAuthStore } from "@/store/authStore";
+import { WorkoutType } from "@/store/workoutStore";
 import { tabStyles } from "@/styles/tabScreen";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  RefreshControl,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+type Filter = "ALL" | WorkoutType;
+
+const FILTER_OPTIONS: FilterOption<Filter>[] = [
+  { value: "ALL", label: "Mind" },
+  { value: "CARDIO", label: "Kardió" },
+  { value: "STRENGTH", label: "Erőedzés" },
+];
+
+const PAGE_SIZE = 10;
 
 export default function HomeScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
 
+  const [filter, setFilter] = useState<Filter>("ALL");
   const [workouts, setWorkouts] = useState<WorkoutSummary[]>([]);
+  const [nextPage, setNextPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const fetchWorkouts = useCallback(async () => {
+  const requestedIdRef = useRef(0);
+  const typeParam = filter === "ALL" ? undefined : filter;
+
+  const loadFirstPage = useCallback(async () => {
+    const requestId = ++requestedIdRef.current;
+    setLoading(true);
+
     try {
-      setLoading(true);
-      const response = await workoutService.getUserWorkouts();
+      const response = await workoutService.getUserWorkouts(
+        0,
+        PAGE_SIZE,
+        typeParam,
+      );
+      if (requestId !== requestedIdRef.current) return;
+
       setWorkouts(response.content);
+      setNextPage(1);
+      setHasMore(response.number + 1 < response.totalPages);
     } catch (error) {
       console.error("Hiba az edzések lekérésekor", error);
     } finally {
-      setLoading(false);
+      if (requestId === requestedIdRef.current) {
+        setLoading(false);
+        setIsRefreshing(false);
+      }
     }
-  }, []);
+  }, [typeParam]);
+
+  const loadMore = async () => {
+    if (!hasMore || loading || isLoadingMore || isRefreshing) return;
+
+    const requestId = requestedIdRef.current;
+    setLoading(true);
+
+    try {
+      const response = await workoutService.getUserWorkouts(
+        nextPage,
+        PAGE_SIZE,
+        typeParam,
+      );
+      if (requestId !== requestedIdRef.current) return;
+
+      setWorkouts((prev) => [...prev, ...response.content]);
+      setNextPage((page) => page + 1);
+      setHasMore(response.number + 1 < response.totalPages);
+    } catch (error) {
+      console.error("Hiba a további edzések lekérésekor", error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
-      fetchWorkouts();
-    }, [fetchWorkouts]),
+      loadFirstPage();
+    }, [loadFirstPage]),
   );
 
-  const renderWorkoutCard = ({ item }: { item: WorkoutSummary }) => {
-    const formattedDate = new Date(item.endTime).toLocaleDateString("hu-HU");
-    const shownSeconds = item.movingTimeSeconds ?? item.durationSeconds ?? 0;
-    const durationMins = Math.floor(shownSeconds / 60);
+  const handleFilterChange = (value: Filter) => {
+    if (value === filter) return;
+    setWorkouts([]);
+    setFilter(value);
+  };
 
-    return (
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => router.push(`/workouts/${item.id}`)}
-      >
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>{item.name}</Text>
-          <Text style={styles.cardType}>
-            {item.type === "CARDIO" ? "Kardió" : "Erőedzés"}
-          </Text>
-        </View>
-
-        <Text style={styles.cardDate}>{formattedDate}</Text>
-
-        <View style={styles.cardDetails}>
-          {item.type === "CARDIO" && item.totalDistance != null && (
-            <Text style={styles.detailText}>
-              {item.totalDistance.toFixed(2)} km
-            </Text>
-          )}
-          {durationMins > 0 && (
-            <Text style={styles.detailText}>{durationMins} perc</Text>
-          )}
-        </View>
-      </TouchableOpacity>
-    );
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    loadFirstPage();
   };
 
   return (
     <SafeAreaView style={tabStyles.container} edges={["top"]}>
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#FC4C02" />
-        </View>
-      ) : (
-        <FlatList
-          data={workouts}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderWorkoutCard}
-          contentContainerStyle={tabStyles.content}
-          ListHeaderComponent={
+      <FlatList
+        data={workouts}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <WorkoutCard
+            item={item}
+            onPress={() => router.push(`/workouts/${item.id}`)}
+          />
+        )}
+        contentContainerStyle={tabStyles.content}
+        ListHeaderComponent={
+          <View style={styles.header}>
             <Text style={tabStyles.title}>Szia, {user?.username}!</Text>
-          }
-          ListEmptyComponent={
-            <Text style={tabStyles.mutedText}>Még nincs edzésed.</Text>
-          }
-          showsVerticalScrollIndicator={false}
-        ></FlatList>
-      )}
+            <FilterChips
+              options={FILTER_OPTIONS}
+              selected={filter}
+              onSelect={handleFilterChange}
+            />
+          </View>
+        }
+        ListEmptyComponent={
+          loading ? (
+            <ActivityIndicator color="#FC4C02" style={styles.spinner} />
+          ) : (
+            <Text style={tabStyles.mutedText}>
+              {filter === "ALL"
+                ? "Még nincs edzésed."
+                : "Ebben a kategóriában még nincs edzésed."}
+            </Text>
+          )
+        }
+        ListFooterComponent={
+          isLoadingMore ? (
+            <ActivityIndicator color="#FC4C02" style={styles.spinner} />
+          ) : null
+        }
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor="#FC4C02"
+            colors={["#FC4C02"]}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  card: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  cardTitle: { color: "#FFF", fontSize: 17, fontWeight: "700", flexShrink: 1 },
-  cardType: {
-    color: "#FC4C02",
-    fontSize: 12,
-    fontWeight: "700",
-    marginLeft: 12,
-  },
-  cardDate: { color: "#8E8E93", fontSize: 13, marginBottom: 10 },
-  cardDetails: { flexDirection: "row", gap: 16 },
-  detailText: { color: "#FFF", fontSize: 15, fontWeight: "600" },
+  header: { marginBottom: 16 },
+  spinner: { marginVertical: 24 },
 });

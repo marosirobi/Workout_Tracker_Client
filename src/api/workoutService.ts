@@ -1,3 +1,4 @@
+import { WorkoutType } from "@/store/workoutStore";
 import { MuscleGroup } from "@/utils/muscleGroups";
 import { axiosClient } from "./axiosClient";
 
@@ -7,10 +8,15 @@ export interface WorkoutSummary {
   type: "STRENGTH" | "CARDIO";
   startTime: string;
   endTime: string;
+  durationSeconds: number | null;
+
   totalDistance: number | null;
   avgPace: string | null;
-  durationSeconds: number | null;
   movingTimeSeconds: number | null;
+
+  totalVolume: number | null;
+  totalSets: number | null;
+  exerciseCount: number | null;
 }
 
 export interface ExerciseSetDetail {
@@ -85,6 +91,7 @@ export interface WorkoutResponse {
   type: "STRENGTH" | "CARDIO";
   startTime: string;
   templateId?: number | null;
+  exercises?: WorkoutExerciseDetail[];
 }
 
 export interface CardioDataRequest {
@@ -111,9 +118,10 @@ export const workoutService = {
   getUserWorkouts: async (
     page: number = 0,
     size: number = 10,
+    type?: WorkoutType,
   ): Promise<PageResponse<WorkoutSummary>> => {
     const response = await axiosClient.get("/workouts", {
-      params: { page, size },
+      params: { page, size, type },
     });
     return response.data;
   },
@@ -123,7 +131,7 @@ export const workoutService = {
     return response.data;
   },
 
-  deleteWorkout: async (id: number) => {
+  deleteWorkout: async (id: number): Promise<void> => {
     await axiosClient.delete(`/workouts/${id}`);
   },
 

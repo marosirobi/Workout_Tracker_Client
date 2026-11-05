@@ -58,6 +58,7 @@ export default function SaveWorkoutScreen() {
     trackPoints,
     exercises,
     activeWorkoutType,
+    templateName,
     cancelFinish,
   } = useWorkoutStore();
 
@@ -66,7 +67,8 @@ export default function SaveWorkoutScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
   const isBusy = isSaving || isDiscarding;
-  const defaultTitle = DEFAULT_TITLES[activeWorkoutType ?? "CARDIO"];
+  const defaultTitle =
+    templateName ?? DEFAULT_TITLES[activeWorkoutType ?? "CARDIO"];
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener(

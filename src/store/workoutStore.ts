@@ -49,6 +49,7 @@ interface ActiveWorkoutData {
   activeWorkoutType: WorkoutType | null;
   startTime: string | null;
   exercises: WorkoutExercise[];
+  templateName: string | null;
 
   //cardio
   totalDistanceKm: number;
@@ -67,7 +68,12 @@ interface ActiveWorkoutData {
 }
 
 interface WorkoutState extends ActiveWorkoutData {
-  setActiveWorkout: (id: number, type: WorkoutType, startTime: string) => void;
+  setActiveWorkout: (
+    id: number,
+    type: WorkoutType,
+    startTime: string,
+    options?: { exercises?: WorkoutExercise[]; templateName?: string | null },
+  ) => void;
   clearActiveWorkout: () => void;
 
   addExercise: (exerciseId: number, exerciseName: string) => void;
@@ -93,6 +99,7 @@ const EMPTY_WORKOUT: ActiveWorkoutData = {
   activeWorkoutType: null,
   startTime: null,
   exercises: [],
+  templateName: null,
   totalDistanceKm: 0,
   trackPoints: [],
   elevationGain: 0,
@@ -116,12 +123,14 @@ export const useWorkoutStore = create<WorkoutState>()(
     (set) => ({
       ...EMPTY_WORKOUT,
 
-      setActiveWorkout: (id, type, startTime) =>
+      setActiveWorkout: (id, type, startTime, options) =>
         set({
           ...EMPTY_WORKOUT,
           activeWorkoutId: id,
           activeWorkoutType: type,
           startTime,
+          exercises: options?.exercises ?? [],
+          templateName: options?.templateName ?? null,
         }),
 
       clearActiveWorkout: () => set({ ...EMPTY_WORKOUT }),

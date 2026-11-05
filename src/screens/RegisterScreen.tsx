@@ -2,12 +2,12 @@ import { authService } from "@/api/authService";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function RegisterScreen() {
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: "#949697",
     padding: 15,
     borderRadius: 10,
     marginBottom: 15,
