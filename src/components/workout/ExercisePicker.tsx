@@ -4,6 +4,7 @@ import {
   MUSCLE_GROUP_ORDER,
   MuscleGroup,
 } from "@/utils/muscleGroups";
+import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import {
   Modal,
@@ -25,6 +26,7 @@ interface ExercisePickerProps {
   addedIds: number[];
   onSelect: (exercise: Exercise) => void;
   onClose: () => void;
+  onInfo?: (exercise: Exercise) => void;
 }
 
 export function ExercisePicker({
@@ -33,6 +35,7 @@ export function ExercisePicker({
   addedIds,
   onSelect,
   onClose,
+  onInfo,
 }: ExercisePickerProps) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("ALL");
@@ -139,14 +142,33 @@ export function ExercisePicker({
           renderItem={({ item }) => {
             const isAdded = addedIds.includes(item.id);
             return (
-              <TouchableOpacity
-                style={[styles.row, isAdded && styles.rowDisabled]}
-                onPress={() => handleSelect(item)}
-                disabled={isAdded}
-              >
-                <Text style={styles.rowName}>{item.exerciseName}</Text>
-                {isAdded && <Text style={styles.rowBadge}>Hozzáadva</Text>}
-              </TouchableOpacity>
+              <View style={styles.row}>
+                <TouchableOpacity
+                  style={[styles.rowMain, isAdded && styles.rowDisabled]}
+                  onPress={() => handleSelect(item)}
+                  disabled={isAdded}
+                >
+                  <Text style={styles.rowName}>{item.exerciseName}</Text>
+                  {isAdded && <Text style={styles.rowBadge}>Hozzáadva</Text>}
+                </TouchableOpacity>
+
+                {onInfo && (
+                  <TouchableOpacity
+                    style={styles.infoButton}
+                    onPress={() => {
+                      reset();
+                      onInfo(item);
+                    }}
+                    hitSlop={8}
+                  >
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={24}
+                      color="#8E8E93"
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
             );
           }}
           ListEmptyComponent={
@@ -205,10 +227,7 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#2A2A2A",
   },
@@ -221,4 +240,14 @@ const styles = StyleSheet.create({
     marginTop: 40,
     fontSize: 15,
   },
+  rowMain: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingLeft: 20,
+    paddingRight: 8,
+    paddingVertical: 14,
+  },
+  infoButton: { paddingHorizontal: 16, paddingVertical: 12 },
 });

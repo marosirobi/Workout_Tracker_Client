@@ -154,6 +154,11 @@ export default function ActiveWorkoutScreen() {
     setModalVisible(false);
   };
 
+  const openExerciseInfo = (exercise: Exercise) => {
+    setModalVisible(false);
+    router.push(`/exercises/${exercise.id}`);
+  };
+
   const renderSet = (exerciseId: number, set: any) => {
     return (
       <View key={set.setNumber} style={styles.setRow}>
@@ -356,6 +361,7 @@ export default function ActiveWorkoutScreen() {
         addedIds={exercises.map((ex) => ex.exerciseId)}
         onSelect={handleSelectExercise}
         onClose={() => setModalVisible(false)}
+        onInfo={openExerciseInfo}
       />
     </View>
   );

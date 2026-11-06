@@ -1,5 +1,6 @@
 import { exerciseService, type Exercise } from "@/api/exerciseService";
 import { templateService, type TemplateRequest } from "@/api/templateService";
+import { workoutService } from "@/api/workoutService";
 import { ExercisePicker } from "@/components/workout/ExercisePicker";
 import {
   TempExercise,
@@ -35,9 +36,14 @@ interface Draft {
 const EMPTY_DRAFT: Draft = { name: "", exercises: [] };
 
 export default function TemplateEditorScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, fromWorkout } = useLocalSearchParams<{
+    id: string;
+    fromWorkout?: string;
+  }>();
+
   const templateId = id === "new" ? null : Number(id);
   const isNew = templateId === null;
+  const sourceWorkoutId = isNew && fromWorkout ? Number(fromWorkout) : null;
 
   const router = useRouter();
   const navigation = useNavigation();
@@ -45,7 +51,9 @@ export default function TemplateEditorScreen() {
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [initialDraft, setInitialDraft] = useState<Draft>(EMPTY_DRAFT);
   const [catalog, setCatalog] = useState<Exercise[]>([]);
-  const [isLoading, setIsLoading] = useState(!isNew);
+  const [isLoading, setIsLoading] = useState(
+    !isNew || sourceWorkoutId !== null,
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isPickerVisible, setPickerVisible] = useState(false);
   const [isDone, setIsDone] = useState(false);
@@ -60,36 +68,68 @@ export default function TemplateEditorScreen() {
   }, []);
 
   useEffect(() => {
-    if (templateId === null) return;
+    if (templateId === null && sourceWorkoutId === null) return;
     let isActive = true;
+
+    const loadTemplate = async (wantedId: number) => {
+      const templates = await templateService.getMyTemplates();
+      const template = templates.find((t) => t.id === wantedId);
+      if (!template) return null;
+
+      const loaded: Draft = {
+        name: template.templateName,
+        exercises: template.exercises.map((ex) => ({
+          exerciseId: ex.exerciseId,
+          exerciseName: ex.exerciseName,
+          muscleGroup: ex.muscleGroup,
+          targetSets: ex.targetSets,
+        })),
+      };
+      return { draft: loaded, isSaved: true };
+    };
+
+    const loadFromWorkout = async (workoutId: number) => {
+      const workout = await workoutService.getWorkoutById(workoutId);
+      const seen = new Set<number>();
+      const exercises: TempExercise[] = [];
+
+      for (const ex of workout.exercises ?? []) {
+        if (seen.has(ex.exerciseId)) continue;
+        seen.add(ex.exerciseId);
+        exercises.push({
+          exerciseId: ex.exerciseId,
+          exerciseName: ex.exerciseName,
+          muscleGroup: ex.muscleGroup,
+          targetSets: Math.min(MAX_SETS, Math.max(MIN_SETS, ex.sets.length)),
+        });
+      }
+
+      const loaded: Draft = { name: workout.workoutTitle ?? "", exercises };
+      return { draft: loaded, isSaved: false };
+    };
 
     const load = async () => {
       try {
-        const templates = await templateService.getMyTemplates();
+        const result =
+          templateId !== null
+            ? await loadTemplate(templateId)
+            : await loadFromWorkout(sourceWorkoutId!);
         if (!isActive) return;
 
-        const template = templates.find((t) => t.id === templateId);
-        if (!template) {
+        if (!result) {
           Alert.alert("Hiba", "A sablon nem található.");
           setIsDone(true);
           return;
         }
 
-        const loaded: Draft = {
-          name: template.templateName,
-          exercises: template.exercises.map((ex) => ({
-            exerciseId: ex.exerciseId,
-            exerciseName: ex.exerciseName,
-            muscleGroup: ex.muscleGroup,
-            targetSets: ex.targetSets,
-          })),
-        };
-        setDraft(loaded);
-        setInitialDraft(loaded);
+        setDraft(result.draft);
+        if (result.isSaved) {
+          setInitialDraft(result.draft);
+        }
       } catch (error) {
-        console.error("Hiba a sablon betöltésekor", error);
+        console.error("Hiba a betöltéskor", error);
         if (isActive) {
-          Alert.alert("Hiba", "Nem sikerült betölteni a sablont.");
+          Alert.alert("Hiba", "Nem sikerült betölteni az adatokat.");
           setIsDone(true);
         }
       } finally {
@@ -101,7 +141,7 @@ export default function TemplateEditorScreen() {
     return () => {
       isActive = false;
     };
-  }, [templateId]);
+  }, [templateId, sourceWorkoutId]);
 
   useEffect(() => {
     if (isDone) router.back();

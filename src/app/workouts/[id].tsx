@@ -273,6 +273,21 @@ export default function WorkoutDetailsScreen() {
             </View>
           )}
 
+          {workout.type === "STRENGTH" &&
+            (workout.exercises?.length ?? 0) > 0 && (
+              <TouchableOpacity
+                style={styles.templateButton}
+                onPress={() =>
+                  router.push({
+                    pathname: "/templates/[id]",
+                    params: { id: "new", fromWorkout: String(workout.id) },
+                  })
+                }
+              >
+                <Text style={styles.templateButtonText}>Mentés sablonként</Text>
+              </TouchableOpacity>
+            )}
+
           <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
             <Text style={styles.deleteText}>Edzés törlése</Text>
           </TouchableOpacity>
@@ -336,4 +351,13 @@ const styles = StyleSheet.create({
     marginTop: 28,
     marginBottom: 10,
   },
+  templateButton: {
+    borderWidth: 1,
+    borderColor: "#FC4C02",
+    borderRadius: 999,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 28,
+  },
+  templateButtonText: { color: "#FC4C02", fontSize: 16, fontWeight: "700" },
 });

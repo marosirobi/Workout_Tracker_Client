@@ -6,6 +6,8 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 
+const ROUTES_ALLOWED_DURING_WORKOUT = ["exercises"];
+
 export default function RootLayout() {
   const { activeWorkoutId, isAwaitingSave, lastSavedWorkoutId } =
     useWorkoutStore();
@@ -49,7 +51,11 @@ export default function RootLayout() {
 
       if (activeWorkoutId) {
         const target = isAwaitingSave ? "save-workout" : "active-workout";
-        if (segments[0] !== target) {
+        const isAllowedOverlay =
+          !isAwaitingSave &&
+          ROUTES_ALLOWED_DURING_WORKOUT.includes(segments[0]);
+
+        if (segments[0] !== target && !isAllowedOverlay) {
           router.replace(`/${target}` as any);
         }
       } else if (isActiveWorkoutScreen || isSaveScreen) {
