@@ -1,18 +1,20 @@
 import { authService } from "@/api/authService";
 import { useAuthStore } from "@/store/authStore";
 import { tabStyles } from "@/styles/tabScreen";
+import { useRouter } from "expo-router";
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
   const { user, clearAuth } = useAuthStore();
+  const router = useRouter();
 
   const logout = async () => {
     try {
@@ -59,4 +61,11 @@ const styles = StyleSheet.create({
   value: { color: "#FFF", fontSize: 17, fontWeight: "600" },
   logoutButton: { alignItems: "center", paddingVertical: 18, marginTop: 24 },
   logoutText: { color: "#FF453A", fontSize: 16, fontWeight: "600" },
+  otherButton: {
+    alignItems: "center",
+    paddingVertical: 18,
+    marginTop: 24,
+    backgroundColor: "#313131",
+  },
+  otherText: { color: "#f9f9f9", fontSize: 16, fontWeight: "600" },
 });

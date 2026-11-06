@@ -26,10 +26,10 @@ export interface ExerciseStats {
   exerciseId: number;
   muscleGroup: MuscleGroup;
   exerciseName: string;
-  heaviestWeight: number | null;
-  bestOneRepMax: number | null;
-  bestSetSession: number | null;
-  bestSessionVolume: number | null;
+  heaviestWeight: ExerciseRecord | null;
+  bestOneRepMax: ExerciseRecord | null;
+  bestSetVolume: ExerciseRecord | null;
+  bestSessionVolume: ExerciseRecord | null;
   history: ExerciseSessionStat[];
 }
 

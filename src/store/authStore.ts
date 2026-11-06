@@ -39,7 +39,6 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-secure-storage",
-      // 3. Itt cseréljük le az AsyncStorage-t a mi titkosított tárolónkra
       storage: createJSONStorage(() => secureStorage),
     },
   ),
