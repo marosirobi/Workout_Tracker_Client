@@ -8,10 +8,10 @@ import {
   type ProgressPoint,
 } from "@/components/exercise/ProgressChart";
 import { FilterChips, type FilterOption } from "@/components/FilterChips";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { StatRows } from "@/components/summary/StatRows";
 import { MUSCLE_GROUP_LABELS } from "@/utils/muscleGroups";
 import { formatVolume, formatWeight } from "@/utils/workoutFormat";
-import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -19,8 +19,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -158,19 +157,10 @@ export default function ExerciseDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerSide}
-          onPress={() => router.back()}
-          hitSlop={12}
-        >
-          <Ionicons name="chevron-back" size={26} color="#FC4C02" />
-        </TouchableOpacity>
-        <Text style={styles.title} numberOfLines={1}>
-          {stats?.exerciseName ?? ""}
-        </Text>
-        <View style={styles.headerSide} />
-      </View>
+      <ScreenHeader
+        title={stats?.exerciseName ?? ""}
+        onBack={() => router.back()}
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         {renderBody()}

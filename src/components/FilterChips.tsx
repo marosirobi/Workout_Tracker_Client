@@ -8,19 +8,24 @@ export interface FilterOption<T extends string> {
 interface FilterChipsProps<T extends string> {
   options: FilterOption<T>[];
   selected: T;
+  horizontalPadding?: number;
   onSelect: (value: T) => void;
 }
 
 export function FilterChips<T extends string>({
   options,
   selected,
+  horizontalPadding = 0,
   onSelect,
 }: FilterChipsProps<T>) {
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.row}
+      contentContainerStyle={[
+        styles.row,
+        { paddingHorizontal: horizontalPadding },
+      ]}
       keyboardShouldPersistTaps="handled"
     >
       {options.map((option) => {

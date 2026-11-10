@@ -1,6 +1,7 @@
 import { authService } from "@/api/authService";
 import { useAuthStore } from "@/store/authStore";
 import { tabStyles } from "@/styles/tabScreen";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
   Alert,
@@ -41,6 +42,15 @@ export default function ProfileScreen() {
           <Text style={styles.value}>{user?.username}</Text>
         </View>
 
+        <TouchableOpacity
+          style={styles.menuRow}
+          onPress={() => router.push("/exercises")}
+        >
+          <Ionicons name="barbell-outline" size={20} color="#FFF" />
+          <Text style={styles.menuText}>Gyakorlatok</Text>
+          <Ionicons name="chevron-forward" size={18} color="#5A5A5E" />
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.logoutButton} onPress={confirmLogout}>
           <Text style={styles.logoutText}>Kijelentkezés</Text>
         </TouchableOpacity>
@@ -61,11 +71,14 @@ const styles = StyleSheet.create({
   value: { color: "#FFF", fontSize: 17, fontWeight: "600" },
   logoutButton: { alignItems: "center", paddingVertical: 18, marginTop: 24 },
   logoutText: { color: "#FF453A", fontSize: 16, fontWeight: "600" },
-  otherButton: {
+  menuRow: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 18,
-    marginTop: 24,
-    backgroundColor: "#313131",
+    gap: 12,
+    backgroundColor: "#1E1E1E",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
   },
-  otherText: { color: "#f9f9f9", fontSize: 16, fontWeight: "600" },
+  menuText: { flex: 1, color: "#FFF", fontSize: 16, fontWeight: "600" },
 });
