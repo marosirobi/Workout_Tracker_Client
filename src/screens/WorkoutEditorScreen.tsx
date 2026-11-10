@@ -1,32 +1,106 @@
-import { workoutService } from "@/api/workoutService";
+import { exerciseService, type Exercise } from "@/api/exerciseService";
+import {
+  workoutService,
+  type EditWorkoutRequest,
+  type WorkoutDetailResponse,
+} from "@/api/workoutService";
 import { EditorHeader } from "@/components/EditorHeader";
+import {
+  EditableExerciseCard,
+  type DraftWorkoutExercise,
+  type SetField,
+} from "@/components/workout/EditableExerciseCard";
+import { ExercisePicker } from "@/components/workout/ExercisePicker";
 import type { WorkoutType } from "@/store/workoutStore";
+import { formatDecimalInput, parseDecimalInput } from "@/utils/numberInput";
 import { DEFAULT_TITLES } from "@/utils/workoutDefaults";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useNavigation, usePreventRemove } from "expo-router/react-navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const MAX_TITLE_LENGTH = 100;
 const MAX_NOTE_LENGTH = 255;
+const MAX_VALUE = 1000;
 
 interface Draft {
   title: string;
   note: string;
+  exercises: DraftWorkoutExercise[];
 }
 
-const EMPTY_DRAFT: Draft = { title: "", note: "" };
+const EMPTY_DRAFT: Draft = { title: "", note: "", exercises: [] };
+
+let keyCounter = 0;
+const newKey = () => `k${keyCounter++}`;
+
+function toDraft(workout: WorkoutDetailResponse): Draft {
+  return {
+    title: workout.workoutTitle ?? "",
+    note: workout.workoutNote ?? "",
+    exercises: (workout.exercises ?? []).map((ex) => ({
+      key: newKey(),
+      exerciseId: ex.exerciseId,
+      exerciseName: ex.exerciseName,
+      muscleGroup: ex.muscleGroup,
+      sets: ex.sets.map((set) => ({
+        key: newKey(),
+        weight: formatDecimalInput(set.weight),
+        reps: set.reps > 0 ? String(set.reps) : "",
+      })),
+    })),
+  };
+}
+
+function validateExercises(exercises: DraftWorkoutExercise[]): string | null {
+  if (exercises.length === 0) {
+    return "Adj hozzá legalább egy gyakorlatot.";
+  }
+
+  for (const exercise of exercises) {
+    for (let i = 0; i < exercise.sets.length; i++) {
+      const set = exercise.sets[i];
+      const where = `${exercise.exerciseName}, ${i + 1}. szett`;
+
+      const weight = parseDecimalInput(set.weight);
+      if (weight === null || weight > MAX_VALUE) {
+        return `${where}: érvénytelen súly.`;
+      }
+
+      const reps = Number(set.reps);
+      if (set.reps === "" || reps < 1 || reps > MAX_VALUE) {
+        return `${where}: adj meg legalább 1 ismétlést.`;
+      }
+    }
+  }
+  return null;
+}
+
+function toRequestExercises(
+  exercises: DraftWorkoutExercise[],
+): EditWorkoutRequest["exercises"] {
+  return exercises.map((exercise, exerciseIndex) => ({
+    exerciseId: exercise.exerciseId,
+    orderIndex: exerciseIndex + 1,
+    sets: exercise.sets.map((set, setIndex) => ({
+      setNumber: setIndex + 1,
+      weight: parseDecimalInput(set.weight) ?? 0,
+      reps: Number(set.reps),
+    })),
+  }));
+}
 
 export default function WorkoutEditorScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,9 +111,13 @@ export default function WorkoutEditorScreen() {
   const [workoutType, setWorkoutType] = useState<WorkoutType | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [initialDraft, setInitialDraft] = useState<Draft>(EMPTY_DRAFT);
+  const [catalog, setCatalog] = useState<Exercise[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPickerVisible, setPickerVisible] = useState(false);
   const [isDone, setIsDone] = useState(false);
+
+  const isStrength = workoutType === "STRENGTH";
 
   useEffect(() => {
     let isActive = true;
@@ -49,10 +127,7 @@ export default function WorkoutEditorScreen() {
         const workout = await workoutService.getWorkoutById(workoutId);
         if (!isActive) return;
 
-        const loaded: Draft = {
-          title: workout.workoutTitle ?? "",
-          note: workout.workoutNote ?? "",
-        };
+        const loaded = toDraft(workout);
         setWorkoutType(workout.type);
         setDraft(loaded);
         setInitialDraft(loaded);
@@ -75,6 +150,16 @@ export default function WorkoutEditorScreen() {
       isActive = false;
     };
   }, [workoutId]);
+
+  useEffect(() => {
+    if (!isStrength) return;
+    exerciseService
+      .getAllExercises()
+      .then(setCatalog)
+      .catch((error) =>
+        console.error("Hiba a gyakorlatok betöltésekor", error),
+      );
+  }, [isStrength]);
 
   useEffect(() => {
     if (isDone) router.back();
@@ -102,18 +187,106 @@ export default function WorkoutEditorScreen() {
 
   const defaultTitle = workoutType ? DEFAULT_TITLES[workoutType] : "";
 
+  const updateExercise = (
+    exerciseIndex: number,
+    change: (exercise: DraftWorkoutExercise) => DraftWorkoutExercise,
+  ) => {
+    setDraft((current) => ({
+      ...current,
+      exercises: current.exercises.map((ex, i) =>
+        i === exerciseIndex ? change(ex) : ex,
+      ),
+    }));
+  };
+
+  const changeSet = (
+    exerciseIndex: number,
+    setIndex: number,
+    field: SetField,
+    value: string,
+  ) => {
+    updateExercise(exerciseIndex, (ex) => ({
+      ...ex,
+      sets: ex.sets.map((set, i) =>
+        i === setIndex ? { ...set, [field]: value } : set,
+      ),
+    }));
+  };
+
+  const addSet = (exerciseIndex: number) => {
+    updateExercise(exerciseIndex, (ex) => {
+      const last = ex.sets[ex.sets.length - 1];
+      return {
+        ...ex,
+        sets: [
+          ...ex.sets,
+          { key: newKey(), weight: last?.weight ?? "", reps: last?.reps ?? "" },
+        ],
+      };
+    });
+  };
+
+  const removeSet = (exerciseIndex: number, setIndex: number) => {
+    updateExercise(exerciseIndex, (ex) => ({
+      ...ex,
+      sets: ex.sets.filter((_, i) => i !== setIndex),
+    }));
+  };
+
+  const removeExercise = (exerciseIndex: number) => {
+    setDraft((current) => ({
+      ...current,
+      exercises: current.exercises.filter((_, i) => i !== exerciseIndex),
+    }));
+  };
+
+  const addExercise = (exercise: Exercise) => {
+    setDraft((current) => ({
+      ...current,
+      exercises: [
+        ...current.exercises,
+        {
+          key: newKey(),
+          exerciseId: exercise.id,
+          exerciseName: exercise.exerciseName,
+          muscleGroup: exercise.muscleGroup,
+          sets: [{ key: newKey(), weight: "", reps: "" }],
+        },
+      ],
+    }));
+    setPickerVisible(false);
+  };
+
   const handleSave = async () => {
     if (!isDirty) {
       setIsDone(true);
       return;
     }
 
+    const exercisesChanged =
+      isStrength &&
+      JSON.stringify(draft.exercises) !==
+        JSON.stringify(initialDraft.exercises);
+
+    if (exercisesChanged) {
+      const error = validateExercises(draft.exercises);
+      if (error) {
+        Alert.alert("Hibás adat", error);
+        return;
+      }
+    }
+
+    const request: EditWorkoutRequest = {
+      workoutTitle: draft.title.trim() || defaultTitle,
+      workoutNote: draft.note.trim(),
+      exercises: exercisesChanged
+        ? toRequestExercises(draft.exercises)
+        : undefined,
+    };
+
     setIsSaving(true);
     try {
-      await workoutService.editWorkout(workoutId, {
-        workoutTitle: draft.title.trim() || defaultTitle,
-        workoutNote: draft.note.trim(),
-      });
+      await workoutService.editWorkout(workoutId, request);
       setIsDone(true);
     } catch (error: any) {
       console.error(
@@ -184,8 +357,45 @@ export default function WorkoutEditorScreen() {
           <Text style={styles.counter}>
             {draft.note.length}/{MAX_NOTE_LENGTH}
           </Text>
+
+          {isStrength && (
+            <>
+              <Text style={styles.label}>GYAKORLATOK</Text>
+              {draft.exercises.map((exercise, exerciseIndex) => (
+                <EditableExerciseCard
+                  key={exercise.key}
+                  exercise={exercise}
+                  disabled={isSaving}
+                  onChangeSet={(setIndex, field, value) =>
+                    changeSet(exerciseIndex, setIndex, field, value)
+                  }
+                  onAddSet={() => addSet(exerciseIndex)}
+                  onRemoveSet={(setIndex) => removeSet(exerciseIndex, setIndex)}
+                  onRemove={() => removeExercise(exerciseIndex)}
+                />
+              ))}
+
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => setPickerVisible(true)}
+                disabled={isSaving}
+              >
+                <Text style={styles.addButtonText}>+ Gyakorlat hozzáadása</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {isStrength && (
+        <ExercisePicker
+          visible={isPickerVisible}
+          exercises={catalog}
+          addedIds={draft.exercises.map((ex) => ex.exerciseId)}
+          onSelect={addExercise}
+          onClose={() => setPickerVisible(false)}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -220,4 +430,14 @@ const styles = StyleSheet.create({
   },
   noteInput: { minHeight: 120 },
   counter: { color: "#5A5A5E", fontSize: 12, textAlign: "right", marginTop: 6 },
+  addButton: {
+    borderWidth: 1,
+    borderColor: "#FC4C02",
+    borderStyle: "dashed",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  addButtonText: { color: "#FC4C02", fontSize: 16, fontWeight: "700" },
 });
