@@ -1,6 +1,7 @@
 import { exerciseService, type Exercise } from "@/api/exerciseService";
 import { templateService, type TemplateRequest } from "@/api/templateService";
 import { workoutService } from "@/api/workoutService";
+import { EditorHeader } from "@/components/EditorHeader";
 import { ExercisePicker } from "@/components/workout/ExercisePicker";
 import {
   TempExercise,
@@ -296,31 +297,12 @@ export default function TemplateEditorScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerSide}
-          onPress={() => router.back()}
-          disabled={isSaving}
-          hitSlop={12}
-        >
-          <Text style={styles.headerAction}>Mégse</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {isNew ? "Új sablon" : "Sablon szerkesztése"}
-        </Text>
-        <TouchableOpacity
-          style={[styles.headerSide, styles.headerRight]}
-          onPress={handleSave}
-          disabled={isSaving}
-          hitSlop={12}
-        >
-          {isSaving ? (
-            <ActivityIndicator color="#FC4C02" />
-          ) : (
-            <Text style={[styles.headerAction, styles.headerSave]}>Mentés</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      <EditorHeader
+        title={isNew ? "Új sablon" : "Sablon szerkesztése"}
+        onCancel={() => router.back()}
+        onSave={handleSave}
+        isSaving={isSaving}
+      />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -402,20 +384,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#2A2A2A",
-  },
-  headerSide: { width: 80 },
-  headerRight: { alignItems: "flex-end" },
-  headerTitle: { color: "#FFF", fontSize: 17, fontWeight: "700" },
-  headerAction: { color: "#FC4C02", fontSize: 16, fontWeight: "600" },
-  headerSave: { fontWeight: "800" },
   content: { padding: 20, paddingBottom: 40 },
   label: {
     color: "#8E8E93",

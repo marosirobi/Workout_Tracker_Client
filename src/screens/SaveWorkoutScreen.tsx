@@ -8,6 +8,7 @@ import {
   useWorkoutStore,
   type WorkoutExercise,
 } from "@/store/workoutStore";
+import { DEFAULT_TITLES } from "@/utils/workoutDefaults";
 import { getAvgPaceMinutes } from "@/utils/workoutFormat";
 import { useEffect, useState } from "react";
 import {
@@ -26,10 +27,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const MAX_TEXT_LENGTH = 255;
-const DEFAULT_TITLES = {
-  CARDIO: "Cardio",
-  STRENGTH: "Workout",
-} as const;
 
 function buildStrengthExercises(exercises: WorkoutExercise[]) {
   return exercises

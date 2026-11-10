@@ -25,7 +25,7 @@ import {
   formatVolume,
   formatWeight,
 } from "@/utils/workoutFormat";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -76,21 +76,31 @@ export default function WorkoutDetailsScreen() {
     return () => subscription.remove();
   }, [close]);
 
-  useEffect(() => {
-    const fetchWorkout = async () => {
-      try {
-        const data = await workoutService.getWorkoutById(Number(id));
-        setWorkout(data);
-      } catch (error) {
-        console.error("Hiba a részletek letöltésekor", error);
-        Alert.alert("Hiba", "Nem sikerült betölteni az edzést.");
-        close();
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchWorkout();
-  }, [id, close]);
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const fetchWorkout = async () => {
+        try {
+          const data = await workoutService.getWorkoutById(Number(id));
+          if (isActive) setWorkout(data);
+        } catch (error) {
+          console.error("Hiba a részletek letöltésekor", error);
+          if (isActive) {
+            Alert.alert("Hiba", "Nem sikerült betölteni az edzést.");
+            close();
+          }
+        } finally {
+          if (isActive) setLoading(false);
+        }
+      };
+
+      fetchWorkout();
+      return () => {
+        isActive = false;
+      };
+    }, [id, close]),
+  );
 
   const summary = useMemo(
     () => (workout?.type === "CARDIO" ? computeCardioSummary(workout) : null),
@@ -162,6 +172,12 @@ export default function WorkoutDetailsScreen() {
       <View style={styles.topBar}>
         <TouchableOpacity onPress={close} hitSlop={12}>
           <Text style={styles.topBarAction}>{isFresh ? "Kész" : "Vissza"}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => router.push(`/workouts/${workout.id}/edit`)}
+          hitSlop={12}
+        >
+          <Text style={styles.topBarAction}>Szerkesztés</Text>
         </TouchableOpacity>
       </View>
 
@@ -305,7 +321,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  topBar: { paddingHorizontal: 20, paddingVertical: 12 },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
   topBarAction: { color: "#FC4C02", fontSize: 16, fontWeight: "600" },
   content: { paddingBottom: 40 },
   congrats: {

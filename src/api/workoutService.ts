@@ -36,6 +36,18 @@ export interface WorkoutExerciseDetail {
   sets: ExerciseSetDetail[];
 }
 
+export interface EditWorkoutSetRequest {
+  setNumber: number;
+  weight: number;
+  reps: number;
+}
+
+export interface EditWorkoutExerciseRequest {
+  exerciseId: number;
+  orderIndex: number;
+  sets: EditWorkoutSetRequest[];
+}
+
 export interface CardioStatsResponse {
   totalDistance: number;
   avgPace: string;
@@ -114,6 +126,12 @@ export interface UpdateWorkoutRequest {
   exercises: any[];
 }
 
+export interface EditWorkoutRequest {
+  workoutTitle: string;
+  workoutNote: string;
+  exercises?: EditWorkoutExerciseRequest[];
+}
+
 export const workoutService = {
   getUserWorkouts: async (
     page: number = 0,
@@ -144,6 +162,14 @@ export const workoutService = {
 
   updateWorkout: async (id: number, request: any): Promise<WorkoutResponse> => {
     const response = await axiosClient.put(`/workouts/${id}`, request);
+    return response.data;
+  },
+
+  editWorkout: async (
+    id: number,
+    request: EditWorkoutRequest,
+  ): Promise<WorkoutDetailResponse> => {
+    const response = await axiosClient.put(`/workouts/${id}/edit`, request);
     return response.data;
   },
 
