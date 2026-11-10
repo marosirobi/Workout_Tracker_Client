@@ -1,5 +1,7 @@
 import { exerciseService, type Exercise } from "@/api/exerciseService";
+import { IconButton } from "@/components/IconButton";
 import { ExercisePicker } from "@/components/workout/ExercisePicker";
+import { SetRow } from "@/components/workout/SetRow";
 import { prepareLiveDisplay } from "@/services/live/workoutLiveSync";
 import { startLocationTracking } from "@/services/locationTask";
 import { discardActiveWorkout } from "@/services/workoutActions";
@@ -23,7 +25,6 @@ import {
   Linking,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -50,6 +51,7 @@ export default function ActiveWorkoutScreen() {
     pauseWorkout,
     resumeWorkout,
     beginFinish,
+    moveExercise,
   } = useWorkoutStore();
 
   const [now, setNow] = useState(() => Date.now());
@@ -159,81 +161,32 @@ export default function ActiveWorkoutScreen() {
     router.push(`/exercises/${exercise.id}`);
   };
 
-  const renderSet = (exerciseId: number, set: any) => {
-    return (
-      <View key={set.setNumber} style={styles.setRow}>
-        <Text style={styles.setNumber}>{set.setNumber}</Text>
-        <TextInput
-          style={[
-            styles.input,
-            set.isCompleted && { color: "#888", backgroundColor: "#222" },
-          ]}
-          keyboardType="numeric"
-          placeholder="0"
-          placeholderTextColor="#666"
-          value={set.weight ? set.weight.toString() : ""}
-          onChangeText={(val) =>
-            updateSet(
-              exerciseId,
-              set.setNumber,
-              parseFloat(val) || 0,
-              set.reps,
-              set.isCompleted,
-            )
-          }
-          editable={!set.isCompleted}
-        />
-        <Text style={styles.unitText}>kg</Text>
-
-        <TextInput
-          style={[
-            styles.input,
-            set.isCompleted && { color: "#888", backgroundColor: "#222" },
-          ]}
-          keyboardType="numeric"
-          placeholder="0"
-          placeholderTextColor="#666"
-          value={set.reps ? set.reps.toString() : ""}
-          onChangeText={(val) =>
-            updateSet(
-              exerciseId,
-              set.setNumber,
-              set.weight,
-              parseInt(val) || 0,
-              set.isCompleted,
-            )
-          }
-          editable={!set.isCompleted}
-        />
-        <Text style={styles.unitText}>ism</Text>
-
-        <TouchableOpacity
-          style={[
-            styles.checkButton,
-            set.isCompleted && styles.checkButtonCompleted,
-          ]}
-          onPress={() =>
-            updateSet(
-              exerciseId,
-              set.setNumber,
-              set.weight,
-              set.reps,
-              !set.isCompleted,
-            )
-          }
-        >
-          <Text style={styles.checkButtonText}>
-            {set.isCompleted ? "✓" : "○"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
-  const renderExercise = ({ item }: { item: WorkoutExercise }) => {
+  const renderExercise = ({
+    item,
+    index,
+  }: {
+    item: WorkoutExercise;
+    index: number;
+  }) => {
     return (
       <View style={styles.exerciseCard}>
-        <Text style={styles.exerciseName}>{item.exerciseName}</Text>
+        <View style={styles.exerciseHeader}>
+          <Text style={styles.exerciseName} numberOfLines={1}>
+            {item.exerciseName}
+          </Text>
+          <View style={styles.moveButtons}>
+            <IconButton
+              name="chevron-up"
+              onPress={() => moveExercise(item.exerciseId, -1)}
+              disabled={index === 0}
+            />
+            <IconButton
+              name="chevron-down"
+              onPress={() => moveExercise(item.exerciseId, 1)}
+              disabled={index === exercises.length - 1}
+            />
+          </View>
+        </View>
 
         <View style={styles.setHeader}>
           <Text style={styles.setHeaderText}>Szett</Text>
@@ -241,7 +194,22 @@ export default function ActiveWorkoutScreen() {
           <Text style={styles.setHeaderText}>Ismétlés</Text>
           <Text style={styles.setHeaderText}>Kész</Text>
         </View>
-        {item.sets.map((set: any) => renderSet(item.exerciseId, set))}
+
+        {item.sets.map((set) => (
+          <SetRow
+            key={set.setNumber}
+            set={set}
+            onUpdate={(weight, reps, isCompleted) =>
+              updateSet(
+                item.exerciseId,
+                set.setNumber,
+                weight,
+                reps,
+                isCompleted,
+              )
+            }
+          />
+        ))}
 
         <TouchableOpacity
           style={styles.addSetButton}
@@ -265,7 +233,7 @@ export default function ActiveWorkoutScreen() {
           <FlatList
             data={exercises}
             renderItem={renderExercise}
-            keyExtractor={(item, index) => index.toString()}
+            keyExtractor={(item) => item.exerciseId.toString()}
             contentContainerStyle={{ paddingBottom: 20 }}
           />
           <TouchableOpacity
@@ -452,7 +420,8 @@ const styles = StyleSheet.create({
     color: "#007BFF",
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 10,
+    flexShrink: 1,
+    marginRight: 12,
   },
   setHeader: {
     flexDirection: "row",
@@ -466,36 +435,6 @@ const styles = StyleSheet.create({
     width: 50,
     textAlign: "center",
   },
-  setRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#2a2a2a",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  setNumber: { color: "white", fontSize: 16, fontWeight: "bold", width: 30 },
-  input: {
-    backgroundColor: "#333",
-    color: "white",
-    fontSize: 16,
-    borderRadius: 5,
-    width: 60,
-    height: 40,
-    textAlign: "center",
-  },
-  unitText: { color: "#888", fontSize: 12, marginLeft: -10 },
-  checkButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#444",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  checkButtonCompleted: { backgroundColor: "#4CAF50" },
-  checkButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
   addSetButton: { marginTop: 10, alignSelf: "center", padding: 10 },
   addSetButtonText: { color: "#007BFF", fontSize: 16, fontWeight: "bold" },
   addExerciseButton: {
@@ -523,6 +462,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: "center",
   },
+  exerciseHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  moveButtons: { flexDirection: "row", gap: 6 },
   primaryButton: { backgroundColor: "#FC4C02" },
   secondaryButton: {
     backgroundColor: "#1E1E1E",

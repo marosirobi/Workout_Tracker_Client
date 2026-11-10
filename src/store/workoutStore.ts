@@ -78,6 +78,7 @@ interface WorkoutState extends ActiveWorkoutData {
 
   addExercise: (exerciseId: number, exerciseName: string) => void;
   addSet: (exerciseId: number) => void;
+  moveExercise: (exerciseId: number, direction: -1 | 1) => void;
   updateSet: (
     exerciseId: number,
     setNumber: number,
@@ -165,6 +166,27 @@ export const useWorkoutStore = create<WorkoutState>()(
             };
           }),
         })),
+
+      moveExercise: (exerciseId, direction) =>
+        set((state) => {
+          const index = state.exercises.findIndex(
+            (ex) => ex.exerciseId === exerciseId,
+          );
+          const target = index + direction;
+          if (index === -1 || target < 0 || target >= state.exercises.length) {
+            return state;
+          }
+
+          const exercises = [...state.exercises];
+          [exercises[index], exercises[target]] = [
+            exercises[target],
+            exercises[index],
+          ];
+
+          return {
+            exercises: exercises.map((ex, i) => ({ ...ex, orderIndex: i })),
+          };
+        }),
 
       updateSet: (exerciseId, setNumber, weight, reps, isCompleted) =>
         set((state) => ({

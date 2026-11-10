@@ -1,6 +1,6 @@
+import { IconButton } from "@/components/IconButton";
 import { MUSCLE_GROUP_LABELS, MuscleGroup } from "@/utils/muscleGroups";
-import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 export interface TempExercise {
   exerciseId: number;
@@ -19,29 +19,6 @@ interface TempExerciseProps {
   onMoveUp: () => void;
   onMoveDown: () => void;
   onRemove: () => void;
-}
-
-function IconButton({
-  name,
-  onPress,
-  disabled = false,
-  color = "#FFF",
-}: {
-  name: React.ComponentProps<typeof Ionicons>["name"];
-  onPress: () => void;
-  disabled?: boolean;
-  color?: string;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={disabled}
-      hitSlop={8}
-      style={[styles.iconButton, disabled && styles.disabled]}
-    >
-      <Ionicons name={name} size={20} color={color} />
-    </TouchableOpacity>
-  );
 }
 
 export function TemplateExerciseRow({
@@ -126,13 +103,4 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   arrows: { flexDirection: "row", gap: 6 },
-  iconButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "#2C2C2E",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  disabled: { opacity: 0.3 },
 });
