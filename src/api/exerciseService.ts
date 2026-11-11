@@ -18,20 +18,25 @@ export interface ExerciseRecord {
 export interface ExerciseSessionStat {
   workoutId: number;
   startTime: string;
-  maxWeight: number;
-  bestOneRepMax: number;
-  bestSetVolume: number;
-  bestSessionVolume: number;
+  maxWeight: number | null;
+  bestOneRepMax: number | null;
+  bestSetVolume: number | null;
+  bestSessionVolume: number | null;
+  maxReps: number | null;
+  maxDurationSeconds: number | null;
 }
 
 export interface ExerciseStats {
   exerciseId: number;
   muscleGroup: MuscleGroup;
   exerciseName: string;
+  trackingType: TrackingType | null;
   heaviestWeight: ExerciseRecord | null;
   bestOneRepMax: ExerciseRecord | null;
   bestSetVolume: ExerciseRecord | null;
   bestSessionVolume: ExerciseRecord | null;
+  mostReps: ExerciseRecord | null;
+  longestDuration: ExerciseRecord | null;
   history: ExerciseSessionStat[];
 }
 

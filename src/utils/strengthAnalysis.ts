@@ -4,6 +4,7 @@ import type {
   WorkoutExerciseDetail,
 } from "@/api/workoutService";
 import { MUSCLE_GROUP_ORDER, MuscleGroup } from "./muscleGroups";
+import { DEFAULT_TRACKING_TYPE, type TrackingType } from "./trackingTypes";
 
 export interface StrengthSummary {
   durationSeconds: number;
@@ -11,13 +12,17 @@ export interface StrengthSummary {
   totalSets: number;
   totalReps: number;
   exerciseCount: number;
-  heaviestWeightKg: number;
+  heaviestWeightKg: number | null;
 }
 
 export interface MuscleGroupSets {
   group: MuscleGroup;
   sets: number;
 }
+
+export const exerciseTrackingType = (
+  exercise: WorkoutExerciseDetail,
+): TrackingType => exercise.trackingType ?? DEFAULT_TRACKING_TYPE;
 
 export function computeMuscleGroupSets(
   exercises: WorkoutExerciseDetail[],
@@ -35,25 +40,68 @@ export function computeMuscleGroupSets(
     .sort((a, b) => b.sets - a.sets);
 }
 
-export const setVolume = (set: ExerciseSetDetail): number =>
-  set.weight * set.reps;
+export function setVolume(
+  type: TrackingType,
+  set: ExerciseSetDetail,
+  bodyWeightKg: number | null,
+): number {
+  const bodyWeight = bodyWeightKg ?? 0;
+  switch (type) {
+    case "BODYWEIGHT":
+      return bodyWeight * set.reps;
+    case "WEIGHTED_BODYWEIGHT":
+      return (bodyWeight + set.weight) * set.reps;
+    case "DURATION":
+      return 0;
+    default:
+      return set.weight * set.reps;
+  }
+}
+
+export const exerciseVolume = (
+  exercise: WorkoutExerciseDetail,
+  bodyWeightKg: number | null,
+): number =>
+  exercise.sets.reduce(
+    (sum, set) =>
+      sum + setVolume(exerciseTrackingType(exercise), set, bodyWeightKg),
+    0,
+  );
+
+function compareSets(
+  type: TrackingType,
+  a: ExerciseSetDetail,
+  b: ExerciseSetDetail,
+): number {
+  switch (type) {
+    case "BODYWEIGHT":
+      return a.reps - b.reps;
+    case "DURATION":
+      return (a.durationSeconds ?? 0) - (b.durationSeconds ?? 0);
+    default:
+      return a.weight !== b.weight ? a.weight - b.weight : a.reps - b.reps;
+  }
+}
 
 export function findBestSet(
+  type: TrackingType,
   sets: ExerciseSetDetail[],
 ): ExerciseSetDetail | null {
-  return sets.reduce<ExerciseSetDetail | null>((best, set) => {
-    if (!best) return set;
-    if (set.weight > best.weight) return set;
-    if (set.weight === best.weight && set.reps > best.reps) return set;
-    return best;
-  }, null);
+  return sets.reduce<ExerciseSetDetail | null>(
+    (best, set) => (!best || compareSets(type, set, best) > 0 ? set : best),
+    null,
+  );
 }
 
 export function computeStrengthSummary(
   workout: WorkoutDetailResponse,
 ): StrengthSummary {
   const exercises = workout.exercises ?? [];
+  const bodyWeightKg = workout.bodyWeightKg ?? null;
   const allSets = exercises.flatMap((ex) => ex.sets);
+  const weightRepsSets = exercises
+    .filter((ex) => exerciseTrackingType(ex) === "WEIGHT_REPS")
+    .flatMap((ex) => ex.sets);
 
   const durationSeconds = workout.endTime
     ? Math.max(
@@ -68,13 +116,16 @@ export function computeStrengthSummary(
 
   return {
     durationSeconds,
-    totalVolumeKg: allSets.reduce((sum, set) => sum + setVolume(set), 0),
+    totalVolumeKg: exercises.reduce(
+      (sum, ex) => sum + exerciseVolume(ex, bodyWeightKg),
+      0,
+    ),
     totalSets: allSets.length,
     totalReps: allSets.reduce((sum, set) => sum + set.reps, 0),
     exerciseCount: exercises.length,
-    heaviestWeightKg: allSets.reduce(
-      (max, set) => Math.max(max, set.weight),
-      0,
-    ),
+    heaviestWeightKg:
+      weightRepsSets.length > 0
+        ? Math.max(...weightRepsSets.map((set) => set.weight))
+        : null,
   };
 }

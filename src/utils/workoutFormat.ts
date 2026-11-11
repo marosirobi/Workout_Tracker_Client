@@ -70,3 +70,10 @@ export const formatWeight = (kg: number): string =>
   `${Math.round(kg * 10) / 10}`;
 export const formatVolume = (kg: number): string =>
   Math.round(kg).toLocaleString("hu-HU");
+
+export const formatSetDuration = (totalSeconds: number): string => {
+  const rounded = Math.round(totalSeconds);
+  const minutes = Math.floor(rounded / 60);
+  const seconds = rounded % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+};

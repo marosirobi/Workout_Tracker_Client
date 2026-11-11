@@ -274,17 +274,25 @@ export default function WorkoutDetailsScreen() {
                     label: "Gyakorlatok",
                     value: `${strengthSummary.exerciseCount}`,
                   },
-                  {
-                    label: "Legnehezebb súly",
-                    value: `${formatWeight(strengthSummary.heaviestWeightKg)} kg`,
-                  },
+                  ...(strengthSummary.heaviestWeightKg !== null
+                    ? [
+                        {
+                          label: "Legnehezebb súly",
+                          value: `${formatWeight(strengthSummary.heaviestWeightKg)} kg`,
+                        },
+                      ]
+                    : []),
                 ]}
               />
               <MuscleGroupList items={muscleGroupSets} />
 
               <Text style={styles.sectionTitle}>GYAKORLATOK</Text>
               {(workout?.exercises ?? []).map((exercise) => (
-                <StrengthExerciseCard key={exercise.id} exercise={exercise} />
+                <StrengthExerciseCard
+                  key={exercise.id}
+                  exercise={exercise}
+                  bodyWeightKg={workout?.bodyWeightKg ?? null}
+                />
               ))}
             </View>
           )}

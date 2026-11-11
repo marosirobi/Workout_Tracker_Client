@@ -1,6 +1,7 @@
 import {
   exerciseService,
   type ExerciseRecord,
+  type ExerciseSessionStat,
   type ExerciseStats,
 } from "@/api/exerciseService";
 import {
@@ -11,7 +12,15 @@ import { FilterChips, type FilterOption } from "@/components/FilterChips";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { StatRows } from "@/components/summary/StatRows";
 import { MUSCLE_GROUP_LABELS } from "@/utils/muscleGroups";
-import { formatVolume, formatWeight } from "@/utils/workoutFormat";
+import {
+  DEFAULT_TRACKING_TYPE,
+  type TrackingType,
+} from "@/utils/trackingTypes";
+import {
+  formatSetDuration,
+  formatVolume,
+  formatWeight,
+} from "@/utils/workoutFormat";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -23,22 +32,130 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type ChartMetric = "WEIGHT" | "ONE_REP_MAX" | "VOLUME";
+type ChartMetric = "WEIGHT" | "ONE_REP_MAX" | "VOLUME" | "REPS" | "DURATION";
 
-const METRIC_OPTIONS: FilterOption<ChartMetric>[] = [
-  { value: "WEIGHT", label: "Súly" },
-  { value: "ONE_REP_MAX", label: "1RM" },
-  { value: "VOLUME", label: "Volumen" },
-];
+function metricOptions(type: TrackingType): FilterOption<ChartMetric>[] {
+  switch (type) {
+    case "BODYWEIGHT":
+      return [
+        { value: "REPS", label: "Ismétlés" },
+        { value: "VOLUME", label: "Volumen" },
+      ];
+    case "WEIGHTED_BODYWEIGHT":
+      return [
+        { value: "WEIGHT", label: "Plusz súly" },
+        { value: "REPS", label: "Ismétlés" },
+        { value: "VOLUME", label: "Volumen" },
+      ];
+    case "DURATION":
+      return [{ value: "DURATION", label: "Idő" }];
+    default:
+      return [
+        { value: "WEIGHT", label: "Súly" },
+        { value: "ONE_REP_MAX", label: "1RM" },
+        { value: "VOLUME", label: "Volumen" },
+      ];
+  }
+}
+
+function metricValue(session: ExerciseSessionStat, metric: ChartMetric): number {
+  switch (metric) {
+    case "WEIGHT":
+      return session.maxWeight ?? 0;
+    case "ONE_REP_MAX":
+      return session.bestOneRepMax ?? 0;
+    case "VOLUME":
+      return session.bestSessionVolume ?? 0;
+    case "REPS":
+      return session.maxReps ?? 0;
+    case "DURATION":
+      return session.maxDurationSeconds ?? 0;
+  }
+}
+
+const METRIC_UNITS: Record<ChartMetric, string> = {
+  WEIGHT: "kg",
+  ONE_REP_MAX: "kg",
+  VOLUME: "kg",
+  REPS: "ism",
+  DURATION: "p:mp",
+};
+
+function tickFormatter(metric: ChartMetric): (value: number) => string {
+  switch (metric) {
+    case "VOLUME":
+      return formatVolume;
+    case "REPS":
+      return (value) => `${Math.round(value)}`;
+    case "DURATION":
+      return formatSetDuration;
+    default:
+      return formatWeight;
+  }
+}
 
 const formatKg = (value: number) => `${formatWeight(value)} kg`;
+const formatPlusKg = (value: number) => `+${formatWeight(value)} kg`;
 const formatVolumeKg = (value: number) => `${formatVolume(value)} kg`;
+const formatReps = (value: number) => `${Math.round(value)} ism`;
 
 function recordValue(
   record: ExerciseRecord | null,
   format: (value: number) => string,
 ): string {
   return record ? format(record.value) : "–";
+}
+
+function recordRows(stats: ExerciseStats): { label: string; value: string }[] {
+  const type = stats.trackingType ?? DEFAULT_TRACKING_TYPE;
+
+  const volumeRows = [
+    {
+      label: "Legjobb szett volumen",
+      value: recordValue(stats.bestSetVolume, formatVolumeKg),
+    },
+    {
+      label: "Legjobb edzés volumen",
+      value: recordValue(stats.bestSessionVolume, formatVolumeKg),
+    },
+  ];
+  const mostRepsRow = {
+    label: "Legtöbb ismétlés",
+    value: recordValue(stats.mostReps, formatReps),
+  };
+
+  switch (type) {
+    case "BODYWEIGHT":
+      return [mostRepsRow, ...volumeRows];
+    case "WEIGHTED_BODYWEIGHT":
+      return [
+        {
+          label: "Legnagyobb plusz súly",
+          value: recordValue(stats.heaviestWeight, formatPlusKg),
+        },
+        mostRepsRow,
+        ...volumeRows,
+      ];
+    case "DURATION":
+      return [
+        {
+          label: "Leghosszabb idő",
+          value: recordValue(stats.longestDuration, formatSetDuration),
+        },
+      ];
+    default:
+      return [
+        {
+          label: "Legnehezebb súly",
+          value: recordValue(stats.heaviestWeight, formatKg),
+        },
+        {
+          label: "Becsült 1RM",
+          value: recordValue(stats.bestOneRepMax, formatKg),
+        },
+        ...volumeRows,
+      ];
+  }
 }
 
 export default function ExerciseDetailScreen() {
@@ -50,23 +167,16 @@ export default function ExerciseDetailScreen() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [metric, setMetric] = useState<ChartMetric>("WEIGHT");
 
+  const trackingType = stats?.trackingType ?? DEFAULT_TRACKING_TYPE;
+  const options = metricOptions(trackingType);
+
   const chartPoints = useMemo<ProgressPoint[]>(() => {
     if (!stats) return [];
     return stats.history.map((session) => ({
       time: new Date(session.startTime).getTime(),
-      value:
-        metric === "WEIGHT"
-          ? session.maxWeight
-          : metric === "ONE_REP_MAX"
-            ? session.bestOneRepMax
-            : session.bestSessionVolume,
+      value: metricValue(session, metric),
     }));
   }, [stats, metric]);
-
-  const formatTick =
-    metric === "VOLUME"
-      ? (value: number) => formatVolume(value)
-      : (value: number) => formatWeight(value);
 
   useEffect(() => {
     let isActive = true;
@@ -74,7 +184,12 @@ export default function ExerciseDetailScreen() {
     const load = async () => {
       try {
         const data = await exerciseService.getExerciseStats(Number(id));
-        if (isActive) setStats(data);
+        if (isActive) {
+          setStats(data);
+          setMetric(
+            metricOptions(data.trackingType ?? DEFAULT_TRACKING_TYPE)[0].value,
+          );
+        }
       } catch (error: any) {
         console.error(
           "Hiba a gyakorlat betöltésekor",
@@ -116,39 +231,22 @@ export default function ExerciseDetailScreen() {
           <>
             <ProgressChart
               points={chartPoints}
-              unit="kg"
-              formatTick={formatTick}
+              unit={METRIC_UNITS[metric]}
+              formatTick={tickFormatter(metric)}
             />
 
-            <View style={styles.filters}>
-              <FilterChips
-                options={METRIC_OPTIONS}
-                selected={metric}
-                onSelect={setMetric}
-              />
-            </View>
+            {options.length > 1 && (
+              <View style={styles.filters}>
+                <FilterChips
+                  options={options}
+                  selected={metric}
+                  onSelect={setMetric}
+                />
+              </View>
+            )}
 
             <Text style={styles.sectionTitle}>REKORDOK</Text>
-            <StatRows
-              rows={[
-                {
-                  label: "Legnehezebb súly",
-                  value: recordValue(stats.heaviestWeight, formatKg),
-                },
-                {
-                  label: "Becsült 1RM",
-                  value: recordValue(stats.bestOneRepMax, formatKg),
-                },
-                {
-                  label: "Legjobb szett volumen",
-                  value: recordValue(stats.bestSetVolume, formatVolumeKg),
-                },
-                {
-                  label: "Legjobb edzés volumen",
-                  value: recordValue(stats.bestSessionVolume, formatVolumeKg),
-                },
-              ]}
-            />
+            <StatRows rows={recordRows(stats)} />
           </>
         )}
       </>

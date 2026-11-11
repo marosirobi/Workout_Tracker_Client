@@ -1,17 +1,84 @@
-import type { WorkoutExerciseDetail } from "@/api/workoutService";
+import type {
+  ExerciseSetDetail,
+  WorkoutExerciseDetail,
+} from "@/api/workoutService";
 import { rankLabel } from "@/utils/rankLabel";
-import { findBestSet, setVolume } from "@/utils/strengthAnalysis";
-import { formatVolume, formatWeight } from "@/utils/workoutFormat";
+import {
+  exerciseTrackingType,
+  exerciseVolume,
+  findBestSet,
+} from "@/utils/strengthAnalysis";
+import type { TrackingType } from "@/utils/trackingTypes";
+import {
+  formatSetDuration,
+  formatVolume,
+  formatWeight,
+} from "@/utils/workoutFormat";
 import { StyleSheet, Text, View } from "react-native";
+
+interface Column {
+  label: string;
+  width: number;
+  render: (set: ExerciseSetDetail) => string;
+}
+
+const repsColumn = (width: number): Column => ({
+  label: "ISM.",
+  width,
+  render: (set) => `${set.reps}`,
+});
+
+function columnsFor(type: TrackingType): Column[] {
+  switch (type) {
+    case "BODYWEIGHT":
+      return [repsColumn(90)];
+    case "WEIGHTED_BODYWEIGHT":
+      return [
+        {
+          label: "PLUSZ SÚLY",
+          width: 90,
+          render: (set) => `+${formatWeight(set.weight)} kg`,
+        },
+        repsColumn(50),
+      ];
+    case "DURATION":
+      return [
+        {
+          label: "IDŐ",
+          width: 90,
+          render: (set) => formatSetDuration(set.durationSeconds ?? 0),
+        },
+      ];
+    default:
+      return [
+        {
+          label: "SÚLY",
+          width: 90,
+          render: (set) => `${formatWeight(set.weight)} kg`,
+        },
+        repsColumn(50),
+      ];
+  }
+}
 
 export function StrengthExerciseCard({
   exercise,
+  bodyWeightKg,
 }: {
   exercise: WorkoutExerciseDetail;
+  bodyWeightKg: number | null;
 }) {
+  const type = exerciseTrackingType(exercise);
   const sets = exercise.sets;
-  const bestSet = findBestSet(sets);
-  const volume = sets.reduce((sum, set) => sum + setVolume(set), 0);
+  const columns = columnsFor(type);
+  const bestSet = findBestSet(type, sets);
+
+  const headerValue =
+    type === "DURATION"
+      ? formatSetDuration(
+          sets.reduce((sum, set) => sum + (set.durationSeconds ?? 0), 0),
+        )
+      : `${formatVolume(exerciseVolume(exercise, bodyWeightKg))} kg`;
 
   const recordLabel = rankLabel(exercise.weightRank);
   const isRecord = exercise.weightRank === 1;
@@ -21,13 +88,19 @@ export function StrengthExerciseCard({
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <Text style={styles.name}>{exercise.exerciseName}</Text>
-        <Text style={styles.volume}>{formatVolume(volume)} kg</Text>
+        <Text style={styles.volume}>{headerValue}</Text>
       </View>
 
       <View style={styles.row}>
         <Text style={[styles.headerText, styles.setColumn]}>SZETT</Text>
-        <Text style={[styles.headerText, styles.weightColumn]}>SÚLY</Text>
-        <Text style={[styles.headerText, styles.repsColumn]}>ISM.</Text>
+        {columns.map((column) => (
+          <Text
+            key={column.label}
+            style={[styles.headerText, { width: column.width }]}
+          >
+            {column.label}
+          </Text>
+        ))}
         <View style={styles.badgeColumn} />
       </View>
 
@@ -42,20 +115,18 @@ export function StrengthExerciseCard({
             >
               {set.setNumber}
             </Text>
-            <Text
-              style={[
-                styles.cell,
-                styles.weightColumn,
-                highlight && styles.best,
-              ]}
-            >
-              {formatWeight(set.weight)} kg
-            </Text>
-            <Text
-              style={[styles.cell, styles.repsColumn, highlight && styles.best]}
-            >
-              {set.reps}
-            </Text>
+            {columns.map((column) => (
+              <Text
+                key={column.label}
+                style={[
+                  styles.cell,
+                  { width: column.width },
+                  highlight && styles.best,
+                ]}
+              >
+                {column.render(set)}
+              </Text>
+            ))}
             <View style={styles.badgeColumn}>
               {label && (
                 <View
@@ -119,8 +190,6 @@ const styles = StyleSheet.create({
   },
   cell: { color: "#FFF", fontSize: 15, fontVariant: ["tabular-nums"] },
   setColumn: { width: 52 },
-  weightColumn: { width: 90 },
-  repsColumn: { width: 50 },
   badgeColumn: { flex: 1, alignItems: "flex-end" },
   best: { color: "#FC4C02", fontWeight: "700" },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
