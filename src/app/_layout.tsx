@@ -37,12 +37,12 @@ export default function RootLayout() {
     const isActiveWorkoutScreen = segments[0] === "active-workout";
 
     if (!user && !isAuthScreen) {
-      router.replace("/login" as any);
+      router.replace("/login");
       return;
     }
 
     if (user && isAuthScreen) {
-      router.replace("/" as any);
+      router.replace("/");
       return;
     }
 
@@ -56,13 +56,16 @@ export default function RootLayout() {
           ROUTES_ALLOWED_DURING_WORKOUT.includes(segments[0]);
 
         if (segments[0] !== target && !isAllowedOverlay) {
-          router.replace(`/${target}` as any);
+          router.replace(isAwaitingSave ? "/save-workout" : "/active-workout");
         }
       } else if (isActiveWorkoutScreen || isSaveScreen) {
         router.replace(
           lastSavedWorkoutId
-            ? `/workouts/${lastSavedWorkoutId}?fresh=1`
-            : ("/" as any),
+            ? {
+                pathname: "/workouts/[id]",
+                params: { id: String(lastSavedWorkoutId), fresh: "1" },
+              }
+            : "/",
         );
       }
     }
