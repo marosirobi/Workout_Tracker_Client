@@ -19,6 +19,7 @@ import {
   formatPace,
   getAvgPaceMinutes,
   getCurrentPaceMinutes,
+  getLiveSpeedMs,
 } from "@/utils/workoutFormat";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -32,8 +33,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-const MOVING_TIMEOUT_MS = 6000;
 
 export default function ActiveWorkoutScreen() {
   const router = useRouter();
@@ -152,9 +151,7 @@ export default function ActiveWorkoutScreen() {
   }, []);
 
   const avgPaceMinutes = getAvgPaceMinutes(elapsedSeconds, totalDistanceKm);
-  const isMoving =
-    lastMovedAt !== null && now - lastMovedAt < MOVING_TIMEOUT_MS;
-  const liveSpeedMs = isMoving ? currentSpeedMs : 0;
+  const liveSpeedMs = getLiveSpeedMs(currentSpeedMs, lastMovedAt, now);
   const currentPaceMinutes = getCurrentPaceMinutes(liveSpeedMs);
 
   const handleSelectExercise = (exercise: Exercise) => {

@@ -1,3 +1,4 @@
+import { classifySample } from "@/utils/gpsFilter";
 import { calculateDistance } from "@/utils/locationUtils";
 import {
   DEFAULT_TRACKING_TYPE,
@@ -64,6 +65,7 @@ interface ActiveWorkoutData {
   elevationGain: number;
   currentSpeedMs: number;
   lastCoords: LastCoords | null;
+  pendingJump: LocationSample | null;
   currentSegment: number;
   lastMovedAt: number | null;
 
@@ -117,6 +119,7 @@ const EMPTY_WORKOUT: ActiveWorkoutData = {
   elevationGain: 0,
   currentSpeedMs: 0,
   lastCoords: null,
+  pendingJump: null,
   currentSegment: 0,
   lastMovedAt: null,
   pausedAt: null,
@@ -143,9 +146,19 @@ const finishTimer = (set: ExerciseSet, now: number): ExerciseSet =>
         timerStartedAt: null,
       };
 
+const toTrackPoint = (sample: LocationSample, segment: number): TrackPoint => ({
+  latitude: sample.latitude,
+  longitude: sample.longitude,
+  elevation: Math.round(sample.altitude ?? 0),
+  speed: Number(
+    (sample.speed && sample.speed > 0 ? sample.speed : 0).toFixed(2),
+  ),
+  segment,
+  timestamp: new Date(sample.timestamp).toISOString(),
+});
+
 const MAX_ACCURACY_METERS = 25;
 const MIN_STEP_KM = 0.002;
-const MAX_SPEED_MS = 20;
 const ELEVATION_NOISE_M = 2;
 
 export const useWorkoutStore = create<WorkoutState>()(
@@ -273,15 +286,7 @@ export const useWorkoutStore = create<WorkoutState>()(
 
           const elevation = sample.altitude ?? 0;
           const speed = sample.speed && sample.speed > 0 ? sample.speed : 0;
-
-          const newPoint: TrackPoint = {
-            latitude: sample.latitude,
-            longitude: sample.longitude,
-            elevation: Math.round(elevation),
-            speed: Number(speed.toFixed(2)),
-            segment: state.currentSegment,
-            timestamp: new Date(sample.timestamp).toISOString(),
-          };
+          const newPoint = toTrackPoint(sample, state.currentSegment);
 
           const last = state.lastCoords;
 
@@ -309,16 +314,42 @@ export const useWorkoutStore = create<WorkoutState>()(
             return { currentSpeedMs: 0 };
           }
 
-          const dtSec = (sample.timestamp - last.timestamp) / 1000;
-          const impliedSpeed = dtSec > 0 ? (stepKm * 1000) / dtSec : Infinity;
-          if (impliedSpeed > MAX_SPEED_MS) {
+          const decision = classifySample(
+            last,
+            state.pendingJump ?? null,
+            sample,
+          );
+
+          if (decision.kind === "hold") {
+            return { pendingJump: sample };
+          }
+
+          if (decision.kind === "relocate") {
+            const from = decision.from as LocationSample;
             const nextSegment = state.currentSegment + 1;
+            const pointsInSegment = state.trackPoints.filter(
+              (p) => p.segment === state.currentSegment,
+            ).length;
+            const keptPoints =
+              pointsInSegment === 1
+                ? state.trackPoints.slice(0, -1)
+                : state.trackPoints;
+            const confirmKm = calculateDistance(
+              from.latitude,
+              from.longitude,
+              sample.latitude,
+              sample.longitude,
+            );
             return {
               currentSegment: nextSegment,
-              currentSpeedMs: 0,
+              currentSpeedMs: speed,
+              lastMovedAt: Date.now(),
+              pendingJump: null,
+              totalDistanceKm: state.totalDistanceKm + confirmKm,
               trackPoints: [
-                ...state.trackPoints,
-                { ...newPoint, segment: nextSegment },
+                ...keptPoints,
+                toTrackPoint(from, nextSegment),
+                toTrackPoint(sample, nextSegment),
               ],
               lastCoords: {
                 latitude: sample.latitude,
@@ -343,6 +374,7 @@ export const useWorkoutStore = create<WorkoutState>()(
           return {
             currentSpeedMs: speed,
             lastMovedAt: Date.now(),
+            pendingJump: null,
             totalDistanceKm: state.totalDistanceKm + stepKm,
             elevationGain: state.elevationGain + climbed,
             trackPoints: [...state.trackPoints, newPoint],
@@ -369,6 +401,7 @@ export const useWorkoutStore = create<WorkoutState>()(
             pausedAt: null,
             totalPausedMs: state.totalPausedMs + pausedForMs,
             lastCoords: null,
+            pendingJump: null,
             lastMovedAt: null,
             currentSegment: state.currentSegment + 1,
           };

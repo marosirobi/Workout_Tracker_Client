@@ -6,7 +6,9 @@ import {
   getCurrentExerciseInfo,
   getCurrentPaceMinutes,
   getEffectiveStartMs,
+  getLiveSpeedMs,
   getTotalVolumeKg,
+  MOVING_TIMEOUT_MS,
 } from "@/utils/workoutFormat";
 import { liveDisplay } from "./liveDisplay";
 import type { LiveWorkoutSnapshot } from "./types";
@@ -20,6 +22,7 @@ let isShowing = false;
 let lastKey = "";
 let lastSentAt = 0;
 let pendingTimer: ReturnType<typeof setTimeout> | null = null;
+let staleTimer: ReturnType<typeof setTimeout> | null = null;
 
 function buildSnapshot(state: WorkoutState): LiveWorkoutSnapshot | null {
   if (!state.activeWorkoutId || !state.activeWorkoutType || !state.startTime)
@@ -38,7 +41,11 @@ function buildSnapshot(state: WorkoutState): LiveWorkoutSnapshot | null {
     avgPace: formatPace(
       getAvgPaceMinutes(elapsedSeconds, state.totalDistanceKm),
     ),
-    currentPace: formatPace(getCurrentPaceMinutes(state.currentSpeedMs)),
+    currentPace: formatPace(
+      getCurrentPaceMinutes(
+        getLiveSpeedMs(state.currentSpeedMs, state.lastMovedAt),
+      ),
+    ),
     completedSets: countCompletedSets(state.exercises),
     volumeKg: getTotalVolumeKg(state.exercises),
     exerciseName: current?.name ?? null,
@@ -46,8 +53,26 @@ function buildSnapshot(state: WorkoutState): LiveWorkoutSnapshot | null {
   };
 }
 
+function scheduleStaleCheck(state: WorkoutState) {
+  if (staleTimer) clearTimeout(staleTimer);
+  staleTimer = null;
+
+  if (state.activeWorkoutType !== "CARDIO") return;
+  if (state.pausedAt || state.lastMovedAt === null) return;
+
+  const expiresIn = state.lastMovedAt + MOVING_TIMEOUT_MS - Date.now();
+  if (expiresIn <= 0) return;
+
+  staleTimer = setTimeout(() => {
+    staleTimer = null;
+    sync();
+  }, expiresIn + 100);
+}
+
 function sync(force = false) {
-  const snapshot = buildSnapshot(useWorkoutStore.getState());
+  const state = useWorkoutStore.getState();
+  const snapshot = buildSnapshot(state);
+  scheduleStaleCheck(state);
 
   if (!snapshot) {
     if (pendingTimer) clearTimeout(pendingTimer);

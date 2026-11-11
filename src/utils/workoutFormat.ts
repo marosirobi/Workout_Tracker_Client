@@ -26,6 +26,17 @@ export const getAvgPaceMinutes = (
 export const getCurrentPaceMinutes = (speedMs: number): number =>
   speedMs > 0.4 ? 1000 / speedMs / 60 : 0;
 
+export const MOVING_TIMEOUT_MS = 6000;
+
+export const getLiveSpeedMs = (
+  currentSpeedMs: number,
+  lastMovedAt: number | null,
+  now: number = Date.now(),
+): number =>
+  lastMovedAt !== null && now - lastMovedAt < MOVING_TIMEOUT_MS
+    ? currentSpeedMs
+    : 0;
+
 export const formatClock = (isoDate: string): string =>
   new Date(isoDate).toLocaleTimeString("hu-HU", {
     hour: "2-digit",
