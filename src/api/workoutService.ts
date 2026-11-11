@@ -1,5 +1,6 @@
 import { WorkoutType } from "@/store/workoutStore";
 import { MuscleGroup } from "@/utils/muscleGroups";
+import type { TrackingType } from "@/utils/trackingTypes";
 import { axiosClient } from "./axiosClient";
 
 export interface WorkoutSummary {
@@ -24,6 +25,7 @@ export interface ExerciseSetDetail {
   setNumber: number;
   reps: number;
   weight: number;
+  durationSeconds: number | null;
 }
 
 export interface WorkoutExerciseDetail {
@@ -33,6 +35,7 @@ export interface WorkoutExerciseDetail {
   orderIndex: number;
   muscleGroup: MuscleGroup | null;
   weightRank: number | null;
+  trackingType: TrackingType;
   sets: ExerciseSetDetail[];
 }
 
@@ -40,6 +43,7 @@ export interface EditWorkoutSetRequest {
   setNumber: number;
   weight: number;
   reps: number;
+  durationSeconds?: number;
 }
 
 export interface EditWorkoutExerciseRequest {
@@ -132,6 +136,12 @@ export interface EditWorkoutRequest {
   exercises?: EditWorkoutExerciseRequest[];
 }
 
+export interface ActivityWorkout {
+  id: number;
+  type: "STRENGTH" | "CARDIO";
+  startTime: string;
+}
+
 export const workoutService = {
   getUserWorkouts: async (
     page: number = 0,
@@ -181,6 +191,16 @@ export const workoutService = {
       `/workouts/${id}/cardio-data`,
       request,
     );
+    return response.data;
+  },
+
+  getWorkoutsInRange: async (
+    from: Date,
+    to: Date,
+  ): Promise<ActivityWorkout[]> => {
+    const response = await axiosClient.get("/workouts/range", {
+      params: { from: from.toISOString(), to: to.toISOString() },
+    });
     return response.data;
   },
 };

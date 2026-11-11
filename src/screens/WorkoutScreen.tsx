@@ -1,4 +1,5 @@
 import { TemplateResponse, templateService } from "@/api/templateService";
+import { BodyWeightModal } from "@/components/BodyWeightModal";
 import { TemplateCard } from "@/components/workout/TemplateCard";
 import { useStartWorkout } from "@/hooks/useStartWorkout";
 import { tabStyles } from "@/styles/tabScreen";
@@ -15,7 +16,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function WorkoutTabScreen() {
-  const { start, isStarting } = useStartWorkout();
+  const { start, isStarting, bodyWeightModal } = useStartWorkout();
   const router = useRouter();
 
   const [templates, setTemplates] = useState<TemplateResponse[]>([]);
@@ -121,6 +122,7 @@ export default function WorkoutTabScreen() {
         </View>
         {renderTemplates()}
       </ScrollView>
+      <BodyWeightModal {...bodyWeightModal} />
     </SafeAreaView>
   );
 }

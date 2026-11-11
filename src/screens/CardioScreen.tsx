@@ -1,3 +1,4 @@
+import { BodyWeightModal } from "@/components/BodyWeightModal";
 import { useStartWorkout } from "@/hooks/useStartWorkout";
 import { tabStyles } from "@/styles/tabScreen";
 import {
@@ -9,7 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CardioTabScreen() {
-  const { start, isStarting } = useStartWorkout();
+  const { start, isStarting, bodyWeightModal } = useStartWorkout();
 
   return (
     <SafeAreaView style={tabStyles.container} edges={["top"]}>
@@ -28,6 +29,7 @@ export default function CardioTabScreen() {
           )}
         </TouchableOpacity>
       </ScrollView>
+      <BodyWeightModal {...bodyWeightModal} />
     </SafeAreaView>
   );
 }

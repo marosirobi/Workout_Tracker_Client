@@ -1,4 +1,8 @@
 import { calculateDistance } from "@/utils/locationUtils";
+import {
+  DEFAULT_TRACKING_TYPE,
+  type TrackingType,
+} from "@/utils/trackingTypes";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -9,6 +13,8 @@ export interface ExerciseSet {
   setNumber: number;
   weight: number;
   reps: number;
+  durationSeconds: number;
+  timerStartedAt: number | null;
   isCompleted: boolean;
 }
 
@@ -16,6 +22,7 @@ export interface WorkoutExercise {
   exerciseId: number;
   exerciseName: string;
   orderIndex: number;
+  trackingType: TrackingType;
   sets: ExerciseSet[];
 }
 
@@ -76,16 +83,20 @@ interface WorkoutState extends ActiveWorkoutData {
   ) => void;
   clearActiveWorkout: () => void;
 
-  addExercise: (exerciseId: number, exerciseName: string) => void;
+  addExercise: (
+    exerciseId: number,
+    exerciseName: string,
+    trackingType: TrackingType,
+  ) => void;
   addSet: (exerciseId: number) => void;
   moveExercise: (exerciseId: number, direction: -1 | 1) => void;
   updateSet: (
     exerciseId: number,
     setNumber: number,
-    weight: number,
-    reps: number,
-    isCompleted: boolean,
+    changes: Partial<ExerciseSet>,
   ) => void;
+  startSetTimer: (exerciseId: number, setNumber: number) => void;
+  stopSetTimer: (exerciseId: number, setNumber: number) => void;
 
   recordLocation: (sample: LocationSample) => void;
   pauseWorkout: () => void;
@@ -114,6 +125,24 @@ const EMPTY_WORKOUT: ActiveWorkoutData = {
   lastSavedWorkoutId: null,
 };
 
+const createSet = (setNumber: number, from?: ExerciseSet): ExerciseSet => ({
+  setNumber,
+  weight: from?.weight ?? 0,
+  reps: from?.reps ?? 0,
+  durationSeconds: from?.durationSeconds ?? 0,
+  timerStartedAt: null,
+  isCompleted: false,
+});
+
+const finishTimer = (set: ExerciseSet, now: number): ExerciseSet =>
+  set.timerStartedAt == null
+    ? set
+    : {
+        ...set,
+        durationSeconds: Math.round((now - set.timerStartedAt) / 1000),
+        timerStartedAt: null,
+      };
+
 const MAX_ACCURACY_METERS = 25;
 const MIN_STEP_KM = 0.002;
 const MAX_SPEED_MS = 20;
@@ -136,13 +165,14 @@ export const useWorkoutStore = create<WorkoutState>()(
 
       clearActiveWorkout: () => set({ ...EMPTY_WORKOUT }),
 
-      addExercise: (exerciseId, exerciseName) =>
+      addExercise: (exerciseId, exerciseName, trackingType) =>
         set((state) => {
           const newExercise: WorkoutExercise = {
             exerciseId,
             exerciseName,
             orderIndex: state.exercises.length,
-            sets: [{ setNumber: 1, weight: 0, reps: 0, isCompleted: false }],
+            trackingType: trackingType ?? DEFAULT_TRACKING_TYPE,
+            sets: [createSet(1)],
           };
           return { exercises: [...state.exercises, newExercise] };
         }),
@@ -154,15 +184,7 @@ export const useWorkoutStore = create<WorkoutState>()(
             const lastSet = ex.sets[ex.sets.length - 1];
             return {
               ...ex,
-              sets: [
-                ...ex.sets,
-                {
-                  setNumber: ex.sets.length + 1,
-                  weight: lastSet ? lastSet.weight : 0,
-                  reps: lastSet ? lastSet.reps : 0,
-                  isCompleted: false,
-                },
-              ],
+              sets: [...ex.sets, createSet(ex.sets.length + 1, lastSet)],
             };
           }),
         })),
@@ -188,20 +210,53 @@ export const useWorkoutStore = create<WorkoutState>()(
           };
         }),
 
-      updateSet: (exerciseId, setNumber, weight, reps, isCompleted) =>
+      updateSet: (exerciseId, setNumber, changes) =>
         set((state) => ({
           exercises: state.exercises.map((ex) => {
             if (ex.exerciseId !== exerciseId) return ex;
             return {
               ...ex,
               sets: ex.sets.map((s) =>
-                s.setNumber === setNumber
-                  ? { ...s, weight, reps, isCompleted }
-                  : s,
+                s.setNumber === setNumber ? { ...s, ...changes } : s,
               ),
             };
           }),
         })),
+
+      startSetTimer: (exerciseId, setNumber) =>
+        set((state) => {
+          const now = Date.now();
+          return {
+            exercises: state.exercises.map((ex) => ({
+              ...ex,
+              sets: ex.sets.map((s) => {
+                const isTarget =
+                  ex.exerciseId === exerciseId && s.setNumber === setNumber;
+                if (isTarget) {
+                  return { ...s, durationSeconds: 0, timerStartedAt: now };
+                }
+                return finishTimer(s, now);
+              }),
+            })),
+          };
+        }),
+
+      stopSetTimer: (exerciseId, setNumber) =>
+        set((state) => {
+          const now = Date.now();
+          return {
+            exercises: state.exercises.map((ex) =>
+              ex.exerciseId !== exerciseId
+                ? ex
+                : {
+                    ...ex,
+                    sets: ex.sets.map((s) =>
+                      s.setNumber === setNumber ? finishTimer(s, now) : s,
+                    ),
+                  },
+            ),
+          };
+        }),
 
       recordLocation: (sample) =>
         set((state) => {

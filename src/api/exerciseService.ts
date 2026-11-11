@@ -1,10 +1,12 @@
 import { MuscleGroup } from "@/utils/muscleGroups";
+import type { TrackingType } from "@/utils/trackingTypes";
 import { axiosClient } from "./axiosClient";
 
 export interface Exercise {
   id: number;
   exerciseName: string;
   muscleGroup: MuscleGroup;
+  trackingType: TrackingType | null;
 }
 
 export interface ExerciseRecord {

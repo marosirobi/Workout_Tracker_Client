@@ -1,10 +1,11 @@
 import { userService } from "@/api/userService";
+import { ActivityCalendar } from "@/components/profile/ActivityCalendar";
 import { useAuthStore } from "@/store/authStore";
 import { tabStyles } from "@/styles/tabScreen";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import type { ComponentProps } from "react";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -36,10 +37,12 @@ function MenuRow({
 export default function ProfileScreen() {
   const { user, clearAuth, updateUser } = useAuthStore();
   const router = useRouter();
+  const [refreshSignal, setRefreshSignal] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
+      setRefreshSignal((value) => value + 1);
 
       userService
         .getMe()
@@ -91,17 +94,22 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <MenuRow
-          icon="create-outline"
-          label="Profil szerkesztése"
-          onPress={() => router.push("/profile/edit")}
-        />
+        <Text style={tabStyles.sectionTitle}>AKTIVITÁS</Text>
+        <ActivityCalendar refreshSignal={refreshSignal} />
 
-        <MenuRow
-          icon="barbell-outline"
-          label="Gyakorlatok"
-          onPress={() => router.push("/exercises")}
-        />
+        <View style={styles.menu}>
+          <MenuRow
+            icon="create-outline"
+            label="Profil szerkesztése"
+            onPress={() => router.push("/profile/edit")}
+          />
+
+          <MenuRow
+            icon="barbell-outline"
+            label="Gyakorlatok"
+            onPress={() => router.push("/exercises")}
+          />
+        </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={confirmLogout}>
           <Text style={styles.logoutText}>Kijelentkezés</Text>
@@ -140,6 +148,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   menuText: { flex: 1, color: "#FFF", fontSize: 16, fontWeight: "600" },
+  menu: { marginTop: 20 },
   logoutButton: { alignItems: "center", paddingVertical: 18, marginTop: 24 },
   logoutText: { color: "#FF453A", fontSize: 16, fontWeight: "600" },
 });

@@ -38,6 +38,7 @@ function buildStrengthExercises(exercises: WorkoutExercise[]) {
           setNumber: index + 1,
           weight: s.weight,
           reps: s.reps,
+          durationSeconds: s.durationSeconds ?? 0,
         })),
     }))
     .filter((ex) => ex.sets.length > 0)
@@ -81,7 +82,7 @@ export default function SaveWorkoutScreen() {
   const saveStrength = async (workoutId: number, workoutTitle: string) => {
     await workoutService.updateWorkout(workoutId, {
       workoutTitle,
-      workoutNote: note.trim || undefined,
+      workoutNote: note.trim() || undefined,
       endTime: new Date().toISOString(),
       exercises: buildStrengthExercises(exercises),
     });

@@ -1,5 +1,11 @@
 import type { MuscleGroup } from "@/utils/muscleGroups";
+import { sanitizeDuration } from "@/utils/durationInput";
 import { sanitizeDecimal, sanitizeInteger } from "@/utils/numberInput";
+import {
+  usesReps,
+  usesWeight,
+  type TrackingType,
+} from "@/utils/trackingTypes";
 import { Ionicons } from "@expo/vector-icons";
 import {
     StyleSheet,
@@ -13,6 +19,7 @@ export interface DraftSet {
   key: string;
   weight: string;
   reps: string;
+  duration: string;
 }
 
 export interface DraftWorkoutExercise {
@@ -20,10 +27,14 @@ export interface DraftWorkoutExercise {
   exerciseId: number;
   exerciseName: string;
   muscleGroup: MuscleGroup | null;
+  trackingType: TrackingType;
   sets: DraftSet[];
 }
 
-export type SetField = "weight" | "reps";
+export type SetField = "weight" | "reps" | "duration";
+
+const weightHeader = (type: TrackingType) =>
+  type === "WEIGHTED_BODYWEIGHT" ? "PLUSZ SÚLY (KG)" : "SÚLY (KG)";
 
 interface EditableExerciseCardProps {
   exercise: DraftWorkoutExercise;
@@ -43,6 +54,8 @@ export function EditableExerciseCard({
   onRemove,
 }: EditableExerciseCardProps) {
   const canRemoveSet = exercise.sets.length > 1;
+  const type = exercise.trackingType;
+  const isDuration = type === "DURATION";
 
   return (
     <View style={styles.card}>
@@ -57,8 +70,19 @@ export function EditableExerciseCard({
 
       <View style={styles.row}>
         <Text style={[styles.headerText, styles.setColumn]}>SZETT</Text>
-        <Text style={[styles.headerText, styles.inputColumn]}>SÚLY (KG)</Text>
-        <Text style={[styles.headerText, styles.inputColumn]}>ISM.</Text>
+        {usesWeight(type) && (
+          <Text style={[styles.headerText, styles.inputColumn]}>
+            {weightHeader(type)}
+          </Text>
+        )}
+        {usesReps(type) && (
+          <Text style={[styles.headerText, styles.inputColumn]}>ISM.</Text>
+        )}
+        {isDuration && (
+          <Text style={[styles.headerText, styles.inputColumn]}>
+            IDŐ (P:MP)
+          </Text>
+        )}
         <View style={styles.deleteColumn} />
       </View>
 
@@ -66,31 +90,50 @@ export function EditableExerciseCard({
         <View key={set.key} style={[styles.row, styles.setRow]}>
           <Text style={[styles.setNumber, styles.setColumn]}>{index + 1}</Text>
 
-          <TextInput
-            style={[styles.input, styles.inputColumn]}
-            value={set.weight}
-            onChangeText={(text) =>
-              onChangeSet(index, "weight", sanitizeDecimal(text))
-            }
-            keyboardType="decimal-pad"
-            placeholder="0"
-            placeholderTextColor="#5A5A5E"
-            maxLength={7}
-            editable={!disabled}
-          />
+          {usesWeight(type) && (
+            <TextInput
+              style={[styles.input, styles.inputColumn]}
+              value={set.weight}
+              onChangeText={(text) =>
+                onChangeSet(index, "weight", sanitizeDecimal(text))
+              }
+              keyboardType="decimal-pad"
+              placeholder="0"
+              placeholderTextColor="#5A5A5E"
+              maxLength={7}
+              editable={!disabled}
+            />
+          )}
 
-          <TextInput
-            style={[styles.input, styles.inputColumn]}
-            value={set.reps}
-            onChangeText={(text) =>
-              onChangeSet(index, "reps", sanitizeInteger(text))
-            }
-            keyboardType="number-pad"
-            placeholder="0"
-            placeholderTextColor="#5A5A5E"
-            maxLength={4}
-            editable={!disabled}
-          />
+          {usesReps(type) && (
+            <TextInput
+              style={[styles.input, styles.inputColumn]}
+              value={set.reps}
+              onChangeText={(text) =>
+                onChangeSet(index, "reps", sanitizeInteger(text))
+              }
+              keyboardType="number-pad"
+              placeholder="0"
+              placeholderTextColor="#5A5A5E"
+              maxLength={4}
+              editable={!disabled}
+            />
+          )}
+
+          {isDuration && (
+            <TextInput
+              style={[styles.input, styles.inputColumn]}
+              value={set.duration}
+              onChangeText={(text) =>
+                onChangeSet(index, "duration", sanitizeDuration(text))
+              }
+              keyboardType="numbers-and-punctuation"
+              placeholder="0:00"
+              placeholderTextColor="#5A5A5E"
+              maxLength={6}
+              editable={!disabled}
+            />
+          )}
 
           <TouchableOpacity
             style={styles.deleteColumn}

@@ -11,6 +11,10 @@ import {
   WorkoutExercise,
 } from "@/store/workoutStore";
 import {
+  DEFAULT_TRACKING_TYPE,
+  setHeaderLabels,
+} from "@/utils/trackingTypes";
+import {
   formatDuration,
   formatPace,
   getAvgPaceMinutes,
@@ -47,6 +51,8 @@ export default function ActiveWorkoutScreen() {
     addExercise,
     addSet,
     updateSet,
+    startSetTimer,
+    stopSetTimer,
     clearActiveWorkout,
     pauseWorkout,
     resumeWorkout,
@@ -152,7 +158,11 @@ export default function ActiveWorkoutScreen() {
   const currentPaceMinutes = getCurrentPaceMinutes(liveSpeedMs);
 
   const handleSelectExercise = (exercise: Exercise) => {
-    addExercise(exercise.id, exercise.exerciseName);
+    addExercise(
+      exercise.id,
+      exercise.exerciseName,
+      exercise.trackingType ?? DEFAULT_TRACKING_TYPE,
+    );
     setModalVisible(false);
   };
 
@@ -168,6 +178,8 @@ export default function ActiveWorkoutScreen() {
     item: WorkoutExercise;
     index: number;
   }) => {
+    const trackingType = item.trackingType ?? DEFAULT_TRACKING_TYPE;
+
     return (
       <View style={styles.exerciseCard}>
         <View style={styles.exerciseHeader}>
@@ -189,25 +201,23 @@ export default function ActiveWorkoutScreen() {
         </View>
 
         <View style={styles.setHeader}>
-          <Text style={styles.setHeaderText}>Szett</Text>
-          <Text style={styles.setHeaderText}>Súly</Text>
-          <Text style={styles.setHeaderText}>Ismétlés</Text>
-          <Text style={styles.setHeaderText}>Kész</Text>
+          {setHeaderLabels(trackingType).map((label) => (
+            <Text key={label} style={styles.setHeaderText}>
+              {label}
+            </Text>
+          ))}
         </View>
 
         {item.sets.map((set) => (
           <SetRow
             key={set.setNumber}
             set={set}
-            onUpdate={(weight, reps, isCompleted) =>
-              updateSet(
-                item.exerciseId,
-                set.setNumber,
-                weight,
-                reps,
-                isCompleted,
-              )
+            trackingType={trackingType}
+            onChange={(changes) =>
+              updateSet(item.exerciseId, set.setNumber, changes)
             }
+            onStartTimer={() => startSetTimer(item.exerciseId, set.setNumber)}
+            onStopTimer={() => stopSetTimer(item.exerciseId, set.setNumber)}
           />
         ))}
 

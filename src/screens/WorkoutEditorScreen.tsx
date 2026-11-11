@@ -12,7 +12,13 @@ import {
 } from "@/components/workout/EditableExerciseCard";
 import { ExercisePicker } from "@/components/workout/ExercisePicker";
 import type { WorkoutType } from "@/store/workoutStore";
+import { formatDurationInput, parseDurationInput } from "@/utils/durationInput";
 import { formatDecimalInput, parseDecimalInput } from "@/utils/numberInput";
+import {
+  DEFAULT_TRACKING_TYPE,
+  usesReps,
+  usesWeight,
+} from "@/utils/trackingTypes";
 import { DEFAULT_TITLES } from "@/utils/workoutDefaults";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useNavigation, usePreventRemove } from "expo-router/react-navigation";
@@ -34,6 +40,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const MAX_TITLE_LENGTH = 100;
 const MAX_NOTE_LENGTH = 255;
 const MAX_VALUE = 1000;
+const MAX_DURATION_SECONDS = 6 * 60 * 60;
 
 interface Draft {
   title: string;
@@ -55,10 +62,12 @@ function toDraft(workout: WorkoutDetailResponse): Draft {
       exerciseId: ex.exerciseId,
       exerciseName: ex.exerciseName,
       muscleGroup: ex.muscleGroup,
+      trackingType: ex.trackingType ?? DEFAULT_TRACKING_TYPE,
       sets: ex.sets.map((set) => ({
         key: newKey(),
         weight: formatDecimalInput(set.weight),
         reps: set.reps > 0 ? String(set.reps) : "",
+        duration: formatDurationInput(set.durationSeconds ?? 0),
       })),
     })),
   };
@@ -70,18 +79,31 @@ function validateExercises(exercises: DraftWorkoutExercise[]): string | null {
   }
 
   for (const exercise of exercises) {
+    const type = exercise.trackingType;
+
     for (let i = 0; i < exercise.sets.length; i++) {
       const set = exercise.sets[i];
       const where = `${exercise.exerciseName}, ${i + 1}. szett`;
 
-      const weight = parseDecimalInput(set.weight);
-      if (weight === null || weight > MAX_VALUE) {
-        return `${where}: érvénytelen súly.`;
+      if (usesWeight(type)) {
+        const weight = parseDecimalInput(set.weight);
+        if (weight === null || weight > MAX_VALUE) {
+          return `${where}: érvénytelen súly.`;
+        }
       }
 
-      const reps = Number(set.reps);
-      if (set.reps === "" || reps < 1 || reps > MAX_VALUE) {
-        return `${where}: adj meg legalább 1 ismétlést.`;
+      if (usesReps(type)) {
+        const reps = Number(set.reps);
+        if (set.reps === "" || reps < 1 || reps > MAX_VALUE) {
+          return `${where}: adj meg legalább 1 ismétlést.`;
+        }
+      }
+
+      if (type === "DURATION") {
+        const seconds = parseDurationInput(set.duration);
+        if (seconds === null || seconds < 1 || seconds > MAX_DURATION_SECONDS) {
+          return `${where}: adj meg érvényes időt (például 1:30).`;
+        }
       }
     }
   }
@@ -91,15 +113,23 @@ function validateExercises(exercises: DraftWorkoutExercise[]): string | null {
 function toRequestExercises(
   exercises: DraftWorkoutExercise[],
 ): EditWorkoutRequest["exercises"] {
-  return exercises.map((exercise, exerciseIndex) => ({
-    exerciseId: exercise.exerciseId,
-    orderIndex: exerciseIndex + 1,
-    sets: exercise.sets.map((set, setIndex) => ({
-      setNumber: setIndex + 1,
-      weight: parseDecimalInput(set.weight) ?? 0,
-      reps: Number(set.reps),
-    })),
-  }));
+  return exercises.map((exercise, exerciseIndex) => {
+    const type = exercise.trackingType;
+
+    return {
+      exerciseId: exercise.exerciseId,
+      orderIndex: exerciseIndex + 1,
+      sets: exercise.sets.map((set, setIndex) => ({
+        setNumber: setIndex + 1,
+        weight: usesWeight(type) ? (parseDecimalInput(set.weight) ?? 0) : 0,
+        reps: usesReps(type) ? Number(set.reps) : 0,
+        durationSeconds:
+          type === "DURATION"
+            ? (parseDurationInput(set.duration) ?? 0)
+            : undefined,
+      })),
+    };
+  });
 }
 
 export default function WorkoutEditorScreen() {
@@ -220,7 +250,12 @@ export default function WorkoutEditorScreen() {
         ...ex,
         sets: [
           ...ex.sets,
-          { key: newKey(), weight: last?.weight ?? "", reps: last?.reps ?? "" },
+          {
+            key: newKey(),
+            weight: last?.weight ?? "",
+            reps: last?.reps ?? "",
+            duration: last?.duration ?? "",
+          },
         ],
       };
     });
@@ -250,7 +285,8 @@ export default function WorkoutEditorScreen() {
           exerciseId: exercise.id,
           exerciseName: exercise.exerciseName,
           muscleGroup: exercise.muscleGroup,
-          sets: [{ key: newKey(), weight: "", reps: "" }],
+          trackingType: exercise.trackingType ?? DEFAULT_TRACKING_TYPE,
+          sets: [{ key: newKey(), weight: "", reps: "", duration: "" }],
         },
       ],
     }));

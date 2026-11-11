@@ -1,6 +1,7 @@
 import { userService } from "@/api/userService";
 import { EditorHeader } from "@/components/EditorHeader";
 import { useAuthStore } from "@/store/authStore";
+import { validateBodyWeight } from "@/utils/bodyWeight";
 import {
   formatDecimalInput,
   parseDecimalInput,
@@ -22,8 +23,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const MIN_WEIGHT = 20;
-const MAX_WEIGHT = 400;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface Draft {
@@ -41,13 +40,7 @@ function validate(draft: Draft): string | null {
   if (!EMAIL_PATTERN.test(draft.email.trim())) {
     return "Érvénytelen e-mail cím.";
   }
-  if (draft.bodyWeight.trim() !== "") {
-    const weight = parseDecimalInput(draft.bodyWeight);
-    if (weight === null || weight < MIN_WEIGHT || weight > MAX_WEIGHT) {
-      return `A testsúly ${MIN_WEIGHT} és ${MAX_WEIGHT} kg között lehet.`;
-    }
-  }
-  return null;
+  return validateBodyWeight(draft.bodyWeight);
 }
 
 export default function ProfileEditScreen() {
@@ -132,14 +125,12 @@ export default function ProfileEditScreen() {
       return;
     }
 
-    const weightText = draft.bodyWeight.trim();
-
     setIsSaving(true);
     try {
       const updated = await userService.updateMe({
         username: draft.username.trim(),
         email: draft.email.trim().toLowerCase(),
-        bodyWeightKg: weightText === "" ? null : parseDecimalInput(weightText),
+        bodyWeightKg: parseDecimalInput(draft.bodyWeight),
       });
 
       if (updated.accessToken) {

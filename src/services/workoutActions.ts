@@ -4,6 +4,7 @@ import {
   WorkoutExercise,
   type WorkoutType,
 } from "@/store/workoutStore";
+import { DEFAULT_TRACKING_TYPE } from "@/utils/trackingTypes";
 import { stopLocationTracking } from "./locationTask";
 
 export interface TemplateToStart {
@@ -51,10 +52,13 @@ export async function startWorkout(
     exerciseId: ex.exerciseId,
     exerciseName: ex.exerciseName,
     orderIndex: ex.orderIndex,
+    trackingType: ex.trackingType ?? DEFAULT_TRACKING_TYPE,
     sets: ex.sets.map((set) => ({
       setNumber: set.setNumber,
       weight: set.weight,
       reps: set.reps,
+      durationSeconds: set.durationSeconds ?? 0,
+      timerStartedAt: null,
       isCompleted: false,
     })),
   }));
