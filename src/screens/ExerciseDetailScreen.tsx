@@ -99,6 +99,24 @@ const formatPlusKg = (value: number) => `+${formatWeight(value)} kg`;
 const formatVolumeKg = (value: number) => `${formatVolume(value)} kg`;
 const formatReps = (value: number) => `${Math.round(value)} ism`;
 
+function valueFormatter(
+  metric: ChartMetric,
+  type: TrackingType,
+): (value: number) => string {
+  switch (metric) {
+    case "VOLUME":
+      return formatVolumeKg;
+    case "REPS":
+      return formatReps;
+    case "DURATION":
+      return formatSetDuration;
+    case "WEIGHT":
+      return type === "WEIGHTED_BODYWEIGHT" ? formatPlusKg : formatKg;
+    default:
+      return formatKg;
+  }
+}
+
 function recordValue(
   record: ExerciseRecord | null,
   format: (value: number) => string,
@@ -233,6 +251,7 @@ export default function ExerciseDetailScreen() {
               points={chartPoints}
               unit={METRIC_UNITS[metric]}
               formatTick={tickFormatter(metric)}
+              formatValue={valueFormatter(metric, trackingType)}
             />
 
             {options.length > 1 && (

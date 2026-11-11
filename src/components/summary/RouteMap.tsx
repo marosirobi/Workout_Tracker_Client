@@ -105,8 +105,8 @@ export function RouteMap({ points }: { points: TrackPointResponse[] }) {
         logo={false}
         compass={false}
         dragPan={false}
-        touchZoom={false}
-        doubleTapZoom={false}
+        touchZoom={true}
+        doubleTapZoom={true}
         touchRotate={false}
         touchPitch={false}
       >

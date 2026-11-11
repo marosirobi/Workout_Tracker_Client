@@ -1,3 +1,5 @@
+import { ChartTooltip } from "@/components/charts/ChartTooltip";
+import { findNearest, useChartScrub } from "@/hooks/useChartScrub";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import Svg, { Circle, Line, Path, Text as SvgText } from "react-native-svg";
@@ -56,18 +58,29 @@ function formatAxisDate(time: number): string {
   });
 }
 
+function formatTooltipDate(time: number): string {
+  return new Date(time).toLocaleDateString("hu-HU", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 interface ProgressChartProps {
   points: ProgressPoint[];
   unit: string;
   formatTick: (value: number) => string;
+  formatValue: (value: number) => string;
 }
 
 export function ProgressChart({
   points,
   unit,
   formatTick,
+  formatValue,
 }: ProgressChartProps) {
   const [width, setWidth] = useState(0);
+  const { containerRef, measure, touchX, scrubProps } = useChartScrub();
 
   const renderChart = () => {
     const values = points.map((p) => p.value);
@@ -102,106 +115,151 @@ export function ProgressChart({
 
     const lastPoint = points[points.length - 1];
 
+    const selected =
+      touchX !== null
+        ? findNearest(points, (p) => Math.abs(x(p.time) - touchX))
+        : null;
+
     return (
-      <Svg width={width} height={HEIGHT}>
-        <SvgText x={0} y={12} fill={LABEL_COLOR} fontSize={11}>
-          {unit}
-        </SvgText>
-
-        {ticks.map((tick) => (
-          <Line
-            key={`grid-${tick}`}
-            x1={PAD_LEFT}
-            y1={y(tick)}
-            x2={width - PAD_RIGHT}
-            y2={y(tick)}
-            stroke={GRID_COLOR}
-            strokeWidth={1}
-          />
-        ))}
-        {ticks.map((tick) => (
-          <SvgText
-            key={`label-${tick}`}
-            x={PAD_LEFT - 8}
-            y={y(tick) + 4}
-            fill={LABEL_COLOR}
-            fontSize={11}
-            textAnchor="end"
-          >
-            {formatTick(tick)}
+      <>
+        <Svg width={width} height={HEIGHT}>
+          <SvgText x={0} y={12} fill={LABEL_COLOR} fontSize={11}>
+            {unit}
           </SvgText>
-        ))}
 
-        {points.length >= 2 && (
-          <>
-            <Path d={areaPath} fill={LINE_COLOR} fillOpacity={0.12} />
-            <Path
-              d={linePath}
-              stroke={LINE_COLOR}
-              strokeWidth={2}
-              fill="none"
-              strokeLinejoin="round"
-              strokeLinecap="round"
+          {ticks.map((tick) => (
+            <Line
+              key={`grid-${tick}`}
+              x1={PAD_LEFT}
+              y1={y(tick)}
+              x2={width - PAD_RIGHT}
+              y2={y(tick)}
+              stroke={GRID_COLOR}
+              strokeWidth={1}
             />
-          </>
-        )}
-
-        {points.map((p, i) => (
-          <Circle
-            key={`dot-${i}`}
-            cx={x(p.time)}
-            cy={y(p.value)}
-            r={3}
-            fill={LINE_COLOR}
-          />
-        ))}
-        <Circle
-          cx={x(lastPoint.time)}
-          cy={y(lastPoint.value)}
-          r={5.5}
-          fill={LINE_COLOR}
-          stroke="#FFFFFF"
-          strokeWidth={2}
-        />
-
-        {timeSpan > 0 ? (
-          <>
+          ))}
+          {ticks.map((tick) => (
             <SvgText
-              x={PAD_LEFT}
-              y={HEIGHT - 6}
-              fill={LABEL_COLOR}
-              fontSize={11}
-            >
-              {formatAxisDate(firstTime)}
-            </SvgText>
-            <SvgText
-              x={width - PAD_RIGHT}
-              y={HEIGHT - 6}
+              key={`label-${tick}`}
+              x={PAD_LEFT - 8}
+              y={y(tick) + 4}
               fill={LABEL_COLOR}
               fontSize={11}
               textAnchor="end"
             >
-              {formatAxisDate(lastTime)}
+              {formatTick(tick)}
             </SvgText>
-          </>
-        ) : (
-          <SvgText
-            x={PAD_LEFT + chartWidth / 2}
-            y={HEIGHT - 6}
-            fill={LABEL_COLOR}
-            fontSize={11}
-            textAnchor="middle"
-          >
-            {formatAxisDate(firstTime)}
-          </SvgText>
+          ))}
+
+          {points.length >= 2 && (
+            <>
+              <Path d={areaPath} fill={LINE_COLOR} fillOpacity={0.12} />
+              <Path
+                d={linePath}
+                stroke={LINE_COLOR}
+                strokeWidth={2}
+                fill="none"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            </>
+          )}
+
+          {points.map((p, i) => (
+            <Circle
+              key={`dot-${i}`}
+              cx={x(p.time)}
+              cy={y(p.value)}
+              r={3}
+              fill={LINE_COLOR}
+            />
+          ))}
+          <Circle
+            cx={x(lastPoint.time)}
+            cy={y(lastPoint.value)}
+            r={5.5}
+            fill={LINE_COLOR}
+            stroke="#FFFFFF"
+            strokeWidth={2}
+          />
+
+          {selected && (
+            <>
+              <Line
+                x1={x(selected.time)}
+                y1={PAD_TOP}
+                x2={x(selected.time)}
+                y2={bottom}
+                stroke="#FFFFFF"
+                strokeOpacity={0.7}
+                strokeWidth={1}
+              />
+              <Circle
+                cx={x(selected.time)}
+                cy={y(selected.value)}
+                r={6}
+                fill={LINE_COLOR}
+                stroke="#FFFFFF"
+                strokeWidth={2}
+              />
+            </>
+          )}
+
+          {timeSpan > 0 ? (
+            <>
+              <SvgText
+                x={PAD_LEFT}
+                y={HEIGHT - 6}
+                fill={LABEL_COLOR}
+                fontSize={11}
+              >
+                {formatAxisDate(firstTime)}
+              </SvgText>
+              <SvgText
+                x={width - PAD_RIGHT}
+                y={HEIGHT - 6}
+                fill={LABEL_COLOR}
+                fontSize={11}
+                textAnchor="end"
+              >
+                {formatAxisDate(lastTime)}
+              </SvgText>
+            </>
+          ) : (
+            <SvgText
+              x={PAD_LEFT + chartWidth / 2}
+              y={HEIGHT - 6}
+              fill={LABEL_COLOR}
+              fontSize={11}
+              textAnchor="middle"
+            >
+              {formatAxisDate(firstTime)}
+            </SvgText>
+          )}
+        </Svg>
+
+        {selected && (
+          <ChartTooltip
+            x={x(selected.time)}
+            containerWidth={width}
+            value={formatValue(selected.value)}
+            caption={formatTooltipDate(selected.time)}
+          />
         )}
-      </Svg>
+      </>
     );
   };
 
   return (
     <View style={styles.card}>
-      <View onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
+      <View
+        ref={containerRef}
+        onLayout={(event) => {
+          setWidth(event.nativeEvent.layout.width);
+          measure();
+        }}
+        {...scrubProps}
+      >
         {width > 0 && points.length > 0 ? (
           renderChart()
         ) : (
