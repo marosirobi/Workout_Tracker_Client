@@ -1,6 +1,5 @@
 import { useAuthStore } from "@/store/authStore";
 import axios from "axios";
-import * as SecureStore from "expo-secure-store";
 
 const BASE_URL = "http://192.168.1.243:8081/api";
 
@@ -11,75 +10,64 @@ export const axiosClient = axios.create({
   },
 });
 
-axiosClient.interceptors.request.use(
-  async (config) => {
-    const token = useAuthStore.getState().token;
+axiosClient.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().token;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+let refreshPromise: Promise<string> | null = null;
 
-    return config;
-  },
-  async (error) => {
-    return Promise.reject(error);
-  },
-);
+async function refreshAccessToken(): Promise<string> {
+  const { refreshToken, setTokens } = useAuthStore.getState();
+  if (!refreshToken) {
+    throw new Error("Nincs frissítő token");
+  }
 
-axiosClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    if (
-      error.response &&
-      (error.response.status === 401 || error.response.status === 403)
-    ) {
-      console.log("Token lejart vagy ervenytelen");
-      useAuthStore.getState().clearAuth();
-    }
-    return Promise.reject(error);
-  },
-);
+  const response = await axios.post(`${BASE_URL}/auth/refresh`, {
+    refreshToken,
+  });
+
+  const newToken: string = response.data.token;
+  setTokens(newToken, response.data.refreshToken);
+  return newToken;
+}
 
 axiosClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const status = error.response?.status;
+    const isAuthRequest = originalRequest?.url?.includes("/auth/");
 
-    if (
-      error.response &&
-      (error.response.status === 401 || error.response.status === 403) &&
-      !originalRequest._retry
-    ) {
-      originalRequest._retry = true;
+    const shouldRefresh =
+      (status === 401 || status === 403) &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !isAuthRequest;
 
-      try {
-        const refreshToken = await SecureStore.getItemAsync("refreshToken");
-        if (refreshToken) {
-          const response = await axios.post(`${BASE_URL}/auth/refresh`, {
-            refreshToken: refreshToken,
-          });
-
-          const newAccessToken = response.data.token;
-          const newRefreshToken = response.data.refreshToken;
-
-          await SecureStore.setItemAsync("accessToken", newAccessToken);
-          await SecureStore.setItemAsync("refreshToken", newRefreshToken);
-
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-
-          return axiosClient(originalRequest);
-        }
-      } catch (refreshError) {
-        await SecureStore.deleteItemAsync("accessToken");
-        await SecureStore.deleteItemAsync("refreshToken");
-        return Promise.reject(refreshError);
-      }
+    if (!shouldRefresh) {
+      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    originalRequest._retry = true;
+
+    try {
+      if (!refreshPromise) {
+        refreshPromise = refreshAccessToken().finally(() => {
+          refreshPromise = null;
+        });
+      }
+      const newToken = await refreshPromise;
+
+      originalRequest.headers.Authorization = `Bearer ${newToken}`;
+      return axiosClient(originalRequest);
+    } catch (refreshError) {
+      console.log("A munkamenet lejárt, újra be kell jelentkezni");
+      useAuthStore.getState().clearAuth();
+      return Promise.reject(refreshError);
+    }
   },
 );

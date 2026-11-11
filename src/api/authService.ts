@@ -1,11 +1,17 @@
-import * as SecureStore from "expo-secure-store";
+import type { AuthUser } from "@/store/authStore";
 import { axiosClient } from "./axiosClient";
 
+interface LoginResult {
+  user: AuthUser;
+  token: string;
+  refreshToken: string;
+}
+
 export const authService = {
-  login: async (email: string, password: string) => {
+  login: async (email: string, password: string): Promise<LoginResult> => {
     const response = await axiosClient.post("/auth/login", {
-      email: email,
-      password: password,
+      email,
+      password,
     });
 
     const { token, refreshToken, user } = response.data;
@@ -14,23 +20,21 @@ export const authService = {
       user: {
         id: user.id,
         username: user.username,
+        email: user.email,
+        bodyWeightKg: user.bodyWeightKg ?? null,
       },
-      token: token,
+      token,
+      refreshToken,
     };
   },
 
   register: async (username: string, email: string, password: string) => {
-    const response = await axiosClient.post("auth/register", {
-      username: username,
-      email: email,
-      password: password,
+    const response = await axiosClient.post("/auth/register", {
+      username,
+      email,
+      password,
     });
 
     return response.data;
-  },
-
-  logout: async () => {
-    await SecureStore.deleteItemAsync("accessToken");
-    await SecureStore.deleteItemAsync("refreshToken");
   },
 };

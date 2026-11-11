@@ -25,8 +25,11 @@ export default function LoginScreen() {
     }
 
     try {
-      const { user, token } = await authService.login(email, password);
-      setAuth(user, token);
+      const { user, token, refreshToken } = await authService.login(
+        email,
+        password,
+      );
+      setAuth(user, token, refreshToken);
       router.replace("/");
     } catch (error: any) {
       const errorMessage = error.response?.data || error.message || error;

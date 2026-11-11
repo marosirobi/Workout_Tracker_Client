@@ -1,8 +1,10 @@
-import { authService } from "@/api/authService";
+import { userService } from "@/api/userService";
 import { useAuthStore } from "@/store/authStore";
 import { tabStyles } from "@/styles/tabScreen";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
+import type { ComponentProps } from "react";
+import { useCallback } from "react";
 import {
   Alert,
   ScrollView,
@@ -13,43 +15,93 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+function MenuRow({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity style={styles.menuRow} onPress={onPress}>
+      <Ionicons name={icon} size={20} color="#FFF" />
+      <Text style={styles.menuText}>{label}</Text>
+      <Ionicons name="chevron-forward" size={18} color="#5A5A5E" />
+    </TouchableOpacity>
+  );
+}
+
 export default function ProfileScreen() {
-  const { user, clearAuth } = useAuthStore();
+  const { user, clearAuth, updateUser } = useAuthStore();
   const router = useRouter();
 
-  const logout = async () => {
-    try {
-      await authService.logout();
-    } finally {
-      clearAuth();
-    }
-  };
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      userService
+        .getMe()
+        .then((me) => {
+          if (!isActive) return;
+          updateUser({
+            username: me.username,
+            email: me.email,
+            bodyWeightKg: me.bodyWeightKg,
+          });
+        })
+        .catch((error) =>
+          console.error("Hiba a profil betöltésekor", error),
+        );
+
+      return () => {
+        isActive = false;
+      };
+    }, [updateUser]),
+  );
 
   const confirmLogout = () => {
     Alert.alert("Kijelentkezés", "Biztosan ki szeretnél jelentkezni?", [
       { text: "Mégse", style: "cancel" },
-      { text: "Kijelentkezés", style: "destructive", onPress: logout },
+      { text: "Kijelentkezés", style: "destructive", onPress: clearAuth },
     ]);
   };
+
+  const initial = user?.username?.charAt(0).toUpperCase() ?? "?";
 
   return (
     <SafeAreaView style={tabStyles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={tabStyles.content}>
         <Text style={tabStyles.title}>Profil</Text>
 
-        <View style={styles.card}>
-          <Text style={styles.label}>FELHASZNÁLÓNÉV</Text>
-          <Text style={styles.value}>{user?.username}</Text>
+        <View style={styles.header}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initial}</Text>
+          </View>
+          <View style={styles.headerTexts}>
+            <Text style={styles.name} numberOfLines={1}>
+              {user?.username}
+            </Text>
+            {user?.email ? (
+              <Text style={styles.email} numberOfLines={1}>
+                {user.email}
+              </Text>
+            ) : null}
+          </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.menuRow}
+        <MenuRow
+          icon="create-outline"
+          label="Profil szerkesztése"
+          onPress={() => router.push("/profile/edit")}
+        />
+
+        <MenuRow
+          icon="barbell-outline"
+          label="Gyakorlatok"
           onPress={() => router.push("/exercises")}
-        >
-          <Ionicons name="barbell-outline" size={20} color="#FFF" />
-          <Text style={styles.menuText}>Gyakorlatok</Text>
-          <Ionicons name="chevron-forward" size={18} color="#5A5A5E" />
-        </TouchableOpacity>
+        />
 
         <TouchableOpacity style={styles.logoutButton} onPress={confirmLogout}>
           <Text style={styles.logoutText}>Kijelentkezés</Text>
@@ -60,17 +112,24 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: "#1E1E1E", borderRadius: 12, padding: 16 },
-  label: {
-    color: "#8E8E93",
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 1,
-    marginBottom: 4,
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    marginBottom: 12,
   },
-  value: { color: "#FFF", fontSize: 17, fontWeight: "600" },
-  logoutButton: { alignItems: "center", paddingVertical: 18, marginTop: 24 },
-  logoutText: { color: "#FF453A", fontSize: 16, fontWeight: "600" },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#FC4C02",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: { color: "#FFF", fontSize: 28, fontWeight: "800" },
+  headerTexts: { flex: 1 },
+  name: { color: "#FFF", fontSize: 22, fontWeight: "800" },
+  email: { color: "#8E8E93", fontSize: 14, marginTop: 2 },
   menuRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -81,4 +140,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   menuText: { flex: 1, color: "#FFF", fontSize: 16, fontWeight: "600" },
+  logoutButton: { alignItems: "center", paddingVertical: 18, marginTop: 24 },
+  logoutText: { color: "#FF453A", fontSize: 16, fontWeight: "600" },
 });

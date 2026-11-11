@@ -2,16 +2,21 @@ import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
 import { createJSONStorage, persist, StateStorage } from "zustand/middleware";
 
-interface User {
+export interface AuthUser {
   id: number;
   username: string;
+  email?: string;
+  bodyWeightKg?: number | null;
 }
 
 interface AuthState {
-  user: User | null;
+  user: AuthUser | null;
   token: string | null;
+  refreshToken: string | null;
   isLoggedIn: boolean;
-  setAuth: (user: User, token: string) => void;
+  setAuth: (user: AuthUser, token: string, refreshToken: string) => void;
+  setTokens: (token: string, refreshToken?: string) => void;
+  updateUser: (changes: Partial<AuthUser>) => void;
   clearAuth: () => void;
 }
 
@@ -32,10 +37,25 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       token: null,
+      refreshToken: null,
       isLoggedIn: false,
-      setAuth: (user: User, token: string) =>
-        set({ user, token, isLoggedIn: true }),
-      clearAuth: () => set({ user: null, token: null, isLoggedIn: false }),
+
+      setAuth: (user, token, refreshToken) =>
+        set({ user, token, refreshToken, isLoggedIn: true }),
+
+      setTokens: (token, refreshToken) =>
+        set((state) => ({
+          token,
+          refreshToken: refreshToken ?? state.refreshToken,
+        })),
+
+      updateUser: (changes) =>
+        set((state) =>
+          state.user ? { user: { ...state.user, ...changes } } : state,
+        ),
+
+      clearAuth: () =>
+        set({ user: null, token: null, refreshToken: null, isLoggedIn: false }),
     }),
     {
       name: "auth-secure-storage",
