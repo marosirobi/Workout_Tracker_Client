@@ -1,4 +1,12 @@
 import { authService } from "@/api/authService";
+import {
+  checkPassword,
+  isValidEmail,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  USERNAME_MAX_LENGTH,
+  USERNAME_MIN_LENGTH,
+} from "@/utils/authValidation";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,8 +28,39 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleRegister = async () => {
-    if (!username || !password || !email) {
+    const trimmedUsername = username.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!trimmedUsername || !normalizedEmail || !password) {
       Alert.alert(t("common.error"), t("auth.fillAll"));
+      return;
+    }
+    if (
+      trimmedUsername.length < USERNAME_MIN_LENGTH ||
+      trimmedUsername.length > USERNAME_MAX_LENGTH
+    ) {
+      Alert.alert(
+        t("common.error"),
+        t("auth.usernameLength", {
+          min: USERNAME_MIN_LENGTH,
+          max: USERNAME_MAX_LENGTH,
+        }),
+      );
+      return;
+    }
+    if (!isValidEmail(normalizedEmail)) {
+      Alert.alert(t("common.error"), t("auth.invalidEmail"));
+      return;
+    }
+    const passwordProblem = checkPassword(password);
+    if (passwordProblem) {
+      Alert.alert(
+        t("common.error"),
+        t(`auth.passwordProblem.${passwordProblem}`, {
+          min: PASSWORD_MIN_LENGTH,
+          max: PASSWORD_MAX_LENGTH,
+        }),
+      );
       return;
     }
     if (password !== confirmPassword) {
@@ -30,12 +69,17 @@ export default function RegisterScreen() {
     }
 
     try {
-      await authService.register(username, email, password);
+      await authService.register(trimmedUsername, normalizedEmail, password);
       Alert.alert(t("auth.registerSuccessTitle"), t("auth.registerSuccess"));
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || t("auth.registerError");
-      Alert.alert(t("auth.registerFailed"), errorMessage);
+      const code = error.response?.data?.code;
+      const message =
+        code === "EMAIL_TAKEN"
+          ? t("auth.emailTaken")
+          : code === "USERNAME_TAKEN"
+            ? t("auth.usernameTaken")
+            : t("auth.registerError");
+      Alert.alert(t("auth.registerFailed"), message);
     }
   };
 
@@ -64,6 +108,9 @@ export default function RegisterScreen() {
         onChangeText={setPassword}
         secureTextEntry={true}
       />
+      <Text style={styles.hint}>
+        {t("auth.passwordHint", { min: PASSWORD_MIN_LENGTH })}
+      </Text>
       <TextInput
         style={styles.input}
         value={confirmPassword}
@@ -116,6 +163,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  hint: { color: "#666", fontSize: 13, marginTop: -8, marginBottom: 15 },
   linkButton: { alignItems: "center", padding: 10 },
   linkText: { color: "#007BFF", fontSize: 16, fontWeight: "600" },
 });

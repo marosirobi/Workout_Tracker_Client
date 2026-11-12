@@ -1,3 +1,4 @@
+import { authService } from "@/api/authService";
 import { userService } from "@/api/userService";
 import { ActivityCalendar } from "@/components/profile/ActivityCalendar";
 import { LANGUAGE_NAMES } from "@/i18n";
@@ -72,10 +73,22 @@ export default function ProfileScreen() {
     }, [updateUser]),
   );
 
+  const handleLogout = () => {
+    const refreshToken = useAuthStore.getState().refreshToken;
+    clearAuth();
+    if (refreshToken) {
+      authService
+        .logout(refreshToken)
+        .catch((error) =>
+          console.log("A szerveroldali kijelentkezés nem sikerült", error),
+        );
+    }
+  };
+
   const confirmLogout = () => {
     Alert.alert(t("profile.logout"), t("profile.logoutConfirm"), [
       { text: t("common.cancel"), style: "cancel" },
-      { text: t("profile.logout"), style: "destructive", onPress: clearAuth },
+      { text: t("profile.logout"), style: "destructive", onPress: handleLogout },
     ]);
   };
 
@@ -110,6 +123,12 @@ export default function ProfileScreen() {
             icon="create-outline"
             label={t("profile.editProfile")}
             onPress={() => router.push("/profile/edit")}
+          />
+
+          <MenuRow
+            icon="lock-closed-outline"
+            label={t("profile.changePassword")}
+            onPress={() => router.push("/profile/password")}
           />
 
           <MenuRow

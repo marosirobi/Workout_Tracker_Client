@@ -2,6 +2,11 @@ import { userService } from "@/api/userService";
 import { EditorHeader } from "@/components/EditorHeader";
 import i18n from "@/i18n";
 import { useAuthStore } from "@/store/authStore";
+import {
+  isValidEmail,
+  USERNAME_MAX_LENGTH,
+  USERNAME_MIN_LENGTH,
+} from "@/utils/authValidation";
 import { validateBodyWeight } from "@/utils/bodyWeight";
 import {
   formatDecimalInput,
@@ -25,8 +30,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 interface Draft {
   username: string;
   email: string;
@@ -36,10 +39,20 @@ interface Draft {
 const EMPTY_DRAFT: Draft = { username: "", email: "", bodyWeight: "" };
 
 function validate(draft: Draft): string | null {
-  if (draft.username.trim() === "") {
+  const username = draft.username.trim();
+  if (username === "") {
     return i18n.t("profileEdit.usernameRequired");
   }
-  if (!EMAIL_PATTERN.test(draft.email.trim())) {
+  if (
+    username.length < USERNAME_MIN_LENGTH ||
+    username.length > USERNAME_MAX_LENGTH
+  ) {
+    return i18n.t("auth.usernameLength", {
+      min: USERNAME_MIN_LENGTH,
+      max: USERNAME_MAX_LENGTH,
+    });
+  }
+  if (!isValidEmail(draft.email.trim())) {
     return i18n.t("profileEdit.invalidEmail");
   }
   return validateBodyWeight(draft.bodyWeight);
@@ -151,10 +164,15 @@ export default function ProfileEditScreen() {
         "Hiba a profil mentésekor",
         error.response?.data || error.message,
       );
+      const code = error.response?.data?.code;
       const message =
-        error.response?.status === 409
-          ? error.response?.data?.message ?? t("profileEdit.taken")
-          : t("profileEdit.saveFailed");
+        code === "EMAIL_TAKEN"
+          ? t("auth.emailTaken")
+          : code === "USERNAME_TAKEN"
+            ? t("auth.usernameTaken")
+            : error.response?.status === 409
+              ? t("profileEdit.taken")
+              : t("profileEdit.saveFailed");
       Alert.alert(t("common.saveFailed"), message);
     } finally {
       setIsSaving(false);
@@ -195,7 +213,7 @@ export default function ProfileEditScreen() {
             }
             autoCapitalize="none"
             autoCorrect={false}
-            maxLength={50}
+            maxLength={USERNAME_MAX_LENGTH}
             editable={!isSaving}
           />
 

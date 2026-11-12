@@ -37,4 +37,8 @@ export const authService = {
 
     return response.data;
   },
+
+  logout: async (refreshToken: string) => {
+    await axiosClient.post("/auth/logout", { refreshToken });
+  },
 };

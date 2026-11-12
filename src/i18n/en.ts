@@ -24,6 +24,7 @@ export const en: typeof hu = {
     title: "Profile",
     activity: "ACTIVITY",
     editProfile: "Edit profile",
+    changePassword: "Change password",
     exercises: "Exercises",
     language: "Language",
     logout: "Log out",
@@ -81,6 +82,21 @@ export const en: typeof hu = {
     registerSuccess: "Registration successful",
     registerFailed: "Registration failed",
     registerError: "Something went wrong during registration.",
+    passwordHint:
+      "At least {{min}} characters, including a letter, a number and a special character (e.g. ! ? # _).",
+    passwordProblem: {
+      tooShort: "The password must be at least {{min}} characters long.",
+      tooLong: "The password can be at most {{max}} characters long.",
+      noLetter: "The password must contain at least one letter.",
+      noDigit: "The password must contain at least one number.",
+      noSpecial: "The password must contain at least one special character (e.g. ! ? # _).",
+    },
+    usernameLength: "The username must be {{min}}–{{max}} characters long.",
+    invalidEmail: "Invalid email address.",
+    emailTaken: "An account with this email already exists.",
+    usernameTaken: "This username is already taken.",
+    wrongCredentials: "Wrong email or password.",
+    loginError: "Could not log in. Please try again later.",
   },
   home: {
     greeting: "Hi, {{name}}!",
@@ -262,6 +278,17 @@ export const en: typeof hu = {
     loadFailed: "Could not load your profile.",
     taken: "This username or email is already taken.",
     saveFailed: "Could not save your profile.",
+  },
+  changePassword: {
+    currentPassword: "CURRENT PASSWORD",
+    newPassword: "NEW PASSWORD",
+    confirmPassword: "CONFIRM NEW PASSWORD",
+    wrongCurrent: "The current password is incorrect.",
+    samePassword: "The new password must be different from the current one.",
+    successTitle: "Done",
+    success:
+      "Your password has been changed. You will need to log in again on your other devices.",
+    failed: "Could not change the password.",
   },
   exercises: {
     title: "Exercises",

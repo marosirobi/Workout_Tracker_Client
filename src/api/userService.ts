@@ -25,4 +25,18 @@ export const userService = {
     const response = await axiosClient.put("/users/me", request);
     return response.data;
   },
+
+  changePassword: async (
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ token: string; refreshToken: string }> => {
+    const response = await axiosClient.put("/users/me/password", {
+      currentPassword,
+      newPassword,
+    });
+    return {
+      token: response.data.token,
+      refreshToken: response.data.refreshToken,
+    };
+  },
 };

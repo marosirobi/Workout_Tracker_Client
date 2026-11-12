@@ -28,15 +28,18 @@ export default function LoginScreen() {
 
     try {
       const { user, token, refreshToken } = await authService.login(
-        email,
+        email.trim().toLowerCase(),
         password,
       );
       setAuth(user, token, refreshToken);
       router.replace("/");
     } catch (error: any) {
-      const errorMessage = error.response?.data || error.message || error;
-      console.error("HIBA: ", error.response?.data || error.message || error);
-      Alert.alert(t("auth.loginFailed"), String(errorMessage));
+      console.error("Bejelentkezési hiba", error.response?.data || error.message);
+      const message =
+        error.response?.status === 401
+          ? t("auth.wrongCredentials")
+          : t("auth.loginError");
+      Alert.alert(t("auth.loginFailed"), message);
     }
   };
 

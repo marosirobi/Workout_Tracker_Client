@@ -22,6 +22,7 @@ export const hu = {
     title: "Profil",
     activity: "AKTIVITÁS",
     editProfile: "Profil szerkesztése",
+    changePassword: "Jelszó módosítása",
     exercises: "Gyakorlatok",
     language: "Nyelv",
     logout: "Kijelentkezés",
@@ -79,6 +80,21 @@ export const hu = {
     registerSuccess: "Sikeres regisztráció",
     registerFailed: "Sikertelen regisztráció",
     registerError: "Hiba történt a regisztráció során.",
+    passwordHint:
+      "Legalább {{min}} karakter, benne betű, szám és speciális karakter (pl. ! ? # _).",
+    passwordProblem: {
+      tooShort: "A jelszó legalább {{min}} karakter legyen.",
+      tooLong: "A jelszó legfeljebb {{max}} karakter lehet.",
+      noLetter: "A jelszóban legyen legalább egy betű.",
+      noDigit: "A jelszóban legyen legalább egy szám.",
+      noSpecial: "A jelszóban legyen legalább egy speciális karakter (pl. ! ? # _).",
+    },
+    usernameLength: "A felhasználónév {{min}}–{{max}} karakter legyen.",
+    invalidEmail: "Érvénytelen e-mail cím.",
+    emailTaken: "Ezzel az e-mail címmel már regisztráltak.",
+    usernameTaken: "Ez a felhasználónév már foglalt.",
+    wrongCredentials: "Hibás e-mail cím vagy jelszó.",
+    loginError: "Nem sikerült bejelentkezni. Próbáld újra később.",
   },
   home: {
     greeting: "Szia, {{name}}!",
@@ -260,6 +276,17 @@ export const hu = {
     loadFailed: "Nem sikerült betölteni a profilt.",
     taken: "Ez a felhasználónév vagy e-mail már foglalt.",
     saveFailed: "Nem sikerült elmenteni a profilt.",
+  },
+  changePassword: {
+    currentPassword: "JELENLEGI JELSZÓ",
+    newPassword: "ÚJ JELSZÓ",
+    confirmPassword: "ÚJ JELSZÓ MEGERŐSÍTÉSE",
+    wrongCurrent: "A jelenlegi jelszó nem helyes.",
+    samePassword: "Az új jelszó nem lehet ugyanaz, mint a jelenlegi.",
+    successTitle: "Kész",
+    success:
+      "A jelszavad megváltozott. A többi eszközödön újra be kell jelentkezned.",
+    failed: "Nem sikerült módosítani a jelszót.",
   },
   exercises: {
     title: "Gyakorlatok",
