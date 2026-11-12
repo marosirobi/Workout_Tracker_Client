@@ -1,169 +1,225 @@
 import { authService } from "@/api/authService";
+import { AuthButton } from "@/components/auth/AuthButton";
+import { AuthScreen, authStyles } from "@/components/auth/AuthScreen";
+import { AuthTextField } from "@/components/auth/AuthTextField";
+import { PasswordChecklist } from "@/components/auth/PasswordChecklist";
+import { useAuthStore } from "@/store/authStore";
 import {
   checkPassword,
   isValidEmail,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
+  type PasswordProblem,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
 } from "@/utils/authValidation";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Alert,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Text, type TextInput, TouchableOpacity, View } from "react-native";
+
+type Field = "username" | "email" | "password" | "confirmPassword";
+type FieldErrorKey =
+  | "auth.usernameRequired"
+  | "auth.usernameLength"
+  | "auth.usernameTaken"
+  | "auth.emailRequired"
+  | "auth.invalidEmail"
+  | "auth.emailTaken"
+  | "auth.confirmRequired"
+  | "auth.passwordMismatch"
+  | `auth.passwordProblem.${PasswordProblem}`;
 
 export default function RegisterScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmRef = useRef<TextInput>(null);
+
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState<Partial<Record<Field, FieldErrorKey>>>(
+    {},
+  );
+  const [hasFormError, setHasFormError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleRegister = async () => {
+  const clearError = (field: Field) => {
+    setErrors((current) => ({ ...current, [field]: undefined }));
+    setHasFormError(false);
+  };
+
+  const errorText = (field: Field) => {
+    const key = errors[field];
+    if (!key) return null;
+    return field === "username"
+      ? t(key, { min: USERNAME_MIN_LENGTH, max: USERNAME_MAX_LENGTH })
+      : t(key, { min: PASSWORD_MIN_LENGTH, max: PASSWORD_MAX_LENGTH });
+  };
+
+  const validate = () => {
+    const next: Partial<Record<Field, FieldErrorKey>> = {};
+
     const trimmedUsername = username.trim();
-    const normalizedEmail = email.trim().toLowerCase();
-
-    if (!trimmedUsername || !normalizedEmail || !password) {
-      Alert.alert(t("common.error"), t("auth.fillAll"));
-      return;
-    }
-    if (
+    if (!trimmedUsername) {
+      next.username = "auth.usernameRequired";
+    } else if (
       trimmedUsername.length < USERNAME_MIN_LENGTH ||
       trimmedUsername.length > USERNAME_MAX_LENGTH
     ) {
-      Alert.alert(
-        t("common.error"),
-        t("auth.usernameLength", {
-          min: USERNAME_MIN_LENGTH,
-          max: USERNAME_MAX_LENGTH,
-        }),
-      );
-      return;
-    }
-    if (!isValidEmail(normalizedEmail)) {
-      Alert.alert(t("common.error"), t("auth.invalidEmail"));
-      return;
-    }
-    const passwordProblem = checkPassword(password);
-    if (passwordProblem) {
-      Alert.alert(
-        t("common.error"),
-        t(`auth.passwordProblem.${passwordProblem}`, {
-          min: PASSWORD_MIN_LENGTH,
-          max: PASSWORD_MAX_LENGTH,
-        }),
-      );
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert(t("common.error"), t("auth.passwordMismatch"));
-      return;
+      next.username = "auth.usernameLength";
     }
 
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) next.email = "auth.emailRequired";
+    else if (!isValidEmail(trimmedEmail)) next.email = "auth.invalidEmail";
+
+    const passwordProblem = checkPassword(password);
+    if (passwordProblem) {
+      next.password = `auth.passwordProblem.${passwordProblem}`;
+    }
+
+    if (!confirmPassword) next.confirmPassword = "auth.confirmRequired";
+    else if (confirmPassword !== password) {
+      next.confirmPassword = "auth.passwordMismatch";
+    }
+
+    return next;
+  };
+
+  const handleRegister = async () => {
+    if (isSubmitting) return;
+
+    const nextErrors = validate();
+    setErrors(nextErrors);
+    setHasFormError(false);
+    if (Object.values(nextErrors).some(Boolean)) return;
+
+    setIsSubmitting(true);
     try {
-      await authService.register(trimmedUsername, normalizedEmail, password);
-      Alert.alert(t("auth.registerSuccessTitle"), t("auth.registerSuccess"));
+      const { user, token, refreshToken } = await authService.register(
+        username.trim(),
+        email.trim().toLowerCase(),
+        password,
+      );
+      setAuth(user, token, refreshToken);
     } catch (error: any) {
+      console.error("Regisztrációs hiba", error.response?.data || error.message);
       const code = error.response?.data?.code;
-      const message =
-        code === "EMAIL_TAKEN"
-          ? t("auth.emailTaken")
-          : code === "USERNAME_TAKEN"
-            ? t("auth.usernameTaken")
-            : t("auth.registerError");
-      Alert.alert(t("auth.registerFailed"), message);
+      if (code === "EMAIL_TAKEN") {
+        setErrors({ email: "auth.emailTaken" });
+      } else if (code === "USERNAME_TAKEN") {
+        setErrors({ username: "auth.usernameTaken" });
+      } else {
+        setHasFormError(true);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{t("auth.register")}</Text>
-      <TextInput
-        style={styles.input}
-        value={username}
+    <AuthScreen>
+      <Text style={authStyles.title}>{t("auth.createAccount")}</Text>
+      <Text style={authStyles.subtitle}>{t("auth.createAccountSubtitle")}</Text>
+
+      <AuthTextField
+        icon="person-outline"
         placeholder={t("auth.username")}
-        onChangeText={setUsername}
-        autoCapitalize="none"
+        value={username}
+        onChangeText={(value) => {
+          setUsername(value);
+          clearError("username");
+        }}
+        error={errorText("username")}
+        maxLength={USERNAME_MAX_LENGTH}
+        autoComplete="username-new"
+        textContentType="username"
+        returnKeyType="next"
+        submitBehavior="submit"
+        onSubmitEditing={() => emailRef.current?.focus()}
+        editable={!isSubmitting}
       />
-      <TextInput
-        style={styles.input}
-        value={email}
+
+      <AuthTextField
+        ref={emailRef}
+        icon="mail-outline"
         placeholder={t("auth.email")}
-        onChangeText={setEmail}
-        autoCapitalize="none"
+        value={email}
+        onChangeText={(value) => {
+          setEmail(value);
+          clearError("email");
+        }}
+        error={errorText("email")}
         keyboardType="email-address"
+        autoComplete="email"
+        textContentType="emailAddress"
+        returnKeyType="next"
+        submitBehavior="submit"
+        onSubmitEditing={() => passwordRef.current?.focus()}
+        editable={!isSubmitting}
       />
-      <TextInput
-        style={styles.input}
-        value={password}
+
+      <AuthTextField
+        ref={passwordRef}
+        icon="lock-closed-outline"
+        isPassword
         placeholder={t("auth.password")}
-        onChangeText={setPassword}
-        secureTextEntry={true}
+        value={password}
+        onChangeText={(value) => {
+          setPassword(value);
+          clearError("password");
+        }}
+        error={errorText("password")}
+        maxLength={PASSWORD_MAX_LENGTH}
+        autoComplete="new-password"
+        textContentType="newPassword"
+        returnKeyType="next"
+        submitBehavior="submit"
+        onSubmitEditing={() => confirmRef.current?.focus()}
+        editable={!isSubmitting}
       />
-      <Text style={styles.hint}>
-        {t("auth.passwordHint", { min: PASSWORD_MIN_LENGTH })}
-      </Text>
-      <TextInput
-        style={styles.input}
-        value={confirmPassword}
+      <PasswordChecklist password={password} />
+
+      <AuthTextField
+        ref={confirmRef}
+        icon="lock-closed-outline"
+        isPassword
         placeholder={t("auth.confirmPassword")}
-        onChangeText={setConfirmPassword}
-        secureTextEntry={true}
+        value={confirmPassword}
+        onChangeText={(value) => {
+          setConfirmPassword(value);
+          clearError("confirmPassword");
+        }}
+        error={errorText("confirmPassword")}
+        maxLength={PASSWORD_MAX_LENGTH}
+        autoComplete="new-password"
+        textContentType="newPassword"
+        returnKeyType="done"
+        onSubmitEditing={handleRegister}
+        editable={!isSubmitting}
       />
 
-      <TouchableOpacity onPress={handleRegister} style={styles.button}>
-        <Text style={styles.buttonText}>{t("auth.register")}</Text>
-      </TouchableOpacity>
+      {hasFormError ? (
+        <Text style={authStyles.formError}>{t("auth.registerError")}</Text>
+      ) : null}
 
-      <TouchableOpacity
-        onPress={() => router.replace("/login")}
-        style={styles.button}
-      >
-        <Text style={styles.linkButton}>{t("common.back")}</Text>
-      </TouchableOpacity>
-    </View>
+      <AuthButton
+        title={t("auth.register")}
+        onPress={handleRegister}
+        isLoading={isSubmitting}
+      />
+
+      <View style={authStyles.footer}>
+        <Text style={authStyles.footerText}>{t("auth.haveAccount")}</Text>
+        <TouchableOpacity onPress={() => router.replace("/login")}>
+          <Text style={authStyles.link}>{t("auth.login")}</Text>
+        </TouchableOpacity>
+      </View>
+    </AuthScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 20,
-    backgroundColor: "#f5f5f5",
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 40,
-    color: "#333",
-  },
-  input: {
-    backgroundColor: "#949697",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  button: {
-    backgroundColor: "#28a745",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-  hint: { color: "#666", fontSize: 13, marginTop: -8, marginBottom: 15 },
-  linkButton: { alignItems: "center", padding: 10 },
-  linkText: { color: "#007BFF", fontSize: 16, fontWeight: "600" },
-});

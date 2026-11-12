@@ -1,4 +1,6 @@
 import { userService } from "@/api/userService";
+import { AuthTextField } from "@/components/auth/AuthTextField";
+import { PasswordChecklist } from "@/components/auth/PasswordChecklist";
 import { EditorHeader } from "@/components/EditorHeader";
 import { useAuthStore } from "@/store/authStore";
 import {
@@ -17,7 +19,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -127,43 +128,35 @@ export default function ChangePasswordScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={styles.label}>{t("changePassword.currentPassword")}</Text>
-          <TextInput
-            style={styles.input}
+          <AuthTextField
+            icon="lock-closed-outline"
+            isPassword
             value={currentPassword}
             onChangeText={setCurrentPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
             autoComplete="current-password"
             textContentType="password"
             editable={!isSaving}
           />
 
           <Text style={styles.label}>{t("changePassword.newPassword")}</Text>
-          <TextInput
-            style={styles.input}
+          <AuthTextField
+            icon="lock-closed-outline"
+            isPassword
             value={newPassword}
             onChangeText={setNewPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
             autoComplete="new-password"
             textContentType="newPassword"
             maxLength={PASSWORD_MAX_LENGTH}
             editable={!isSaving}
           />
-          <Text style={styles.hint}>
-            {t("auth.passwordHint", { min: PASSWORD_MIN_LENGTH })}
-          </Text>
+          <PasswordChecklist password={newPassword} />
 
           <Text style={styles.label}>{t("changePassword.confirmPassword")}</Text>
-          <TextInput
-            style={styles.input}
+          <AuthTextField
+            icon="lock-closed-outline"
+            isPassword
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
             autoComplete="new-password"
             textContentType="newPassword"
             maxLength={PASSWORD_MAX_LENGTH}
@@ -185,17 +178,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 1,
     marginBottom: 8,
-    marginTop: 16,
+    marginTop: 4,
   },
-  input: {
-    backgroundColor: "#1E1E1E",
-    color: "#FFF",
-    fontSize: 16,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: "#2A2A2A",
-  },
-  hint: { color: "#8E8E93", fontSize: 13, lineHeight: 18, marginTop: 8 },
 });

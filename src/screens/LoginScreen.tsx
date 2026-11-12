@@ -1,112 +1,132 @@
 import { authService } from "@/api/authService";
+import { AuthButton } from "@/components/auth/AuthButton";
+import { AuthScreen, authStyles } from "@/components/auth/AuthScreen";
+import { AuthTextField } from "@/components/auth/AuthTextField";
 import { useAuthStore } from "@/store/authStore";
+import { isValidEmail } from "@/utils/authValidation";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Alert,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Text, type TextInput, TouchableOpacity, View } from "react-native";
+
+type Field = "email" | "password";
+type FieldErrorKey =
+  | "auth.emailRequired"
+  | "auth.invalidEmail"
+  | "auth.passwordRequired";
+type FormErrorKey = "auth.wrongCredentials" | "auth.loginError";
 
 export default function LoginScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const passwordRef = useRef<TextInput>(null);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<Partial<Record<Field, FieldErrorKey>>>(
+    {},
+  );
+  const [formError, setFormError] = useState<FormErrorKey | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { setAuth } = useAuthStore();
+  const clearError = (field: Field) => {
+    setErrors((current) => ({ ...current, [field]: undefined }));
+    setFormError(null);
+  };
+
+  const validate = () => {
+    const next: Partial<Record<Field, FieldErrorKey>> = {};
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) next.email = "auth.emailRequired";
+    else if (!isValidEmail(trimmedEmail)) next.email = "auth.invalidEmail";
+    if (!password) next.password = "auth.passwordRequired";
+    return next;
+  };
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert(t("common.error"), t("auth.fillAll"));
-      return;
-    }
+    if (isSubmitting) return;
 
+    const nextErrors = validate();
+    setErrors(nextErrors);
+    setFormError(null);
+    if (Object.values(nextErrors).some(Boolean)) return;
+
+    setIsSubmitting(true);
     try {
       const { user, token, refreshToken } = await authService.login(
         email.trim().toLowerCase(),
         password,
       );
       setAuth(user, token, refreshToken);
-      router.replace("/");
     } catch (error: any) {
       console.error("Bejelentkezési hiba", error.response?.data || error.message);
-      const message =
+      setFormError(
         error.response?.status === 401
-          ? t("auth.wrongCredentials")
-          : t("auth.loginError");
-      Alert.alert(t("auth.loginFailed"), message);
+          ? "auth.wrongCredentials"
+          : "auth.loginError",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Workout Tracker</Text>
+    <AuthScreen>
+      <Text style={[authStyles.title, { marginBottom: 32 }]}>
+        Workout Tracker
+      </Text>
 
-      <TextInput
-        style={styles.input}
+      <AuthTextField
+        icon="mail-outline"
         placeholder={t("auth.email")}
         value={email}
-        onChangeText={setEmail}
+        onChangeText={(value) => {
+          setEmail(value);
+          clearError("email");
+        }}
+        error={errors.email ? t(errors.email) : null}
         keyboardType="email-address"
-        autoCapitalize="none"
+        autoComplete="email"
+        textContentType="emailAddress"
+        returnKeyType="next"
+        submitBehavior="submit"
+        onSubmitEditing={() => passwordRef.current?.focus()}
+        editable={!isSubmitting}
       />
-      <TextInput
-        style={styles.input}
+
+      <AuthTextField
+        ref={passwordRef}
+        icon="lock-closed-outline"
+        isPassword
         placeholder={t("auth.password")}
         value={password}
-        onChangeText={setPassword}
-        secureTextEntry={true}
+        onChangeText={(value) => {
+          setPassword(value);
+          clearError("password");
+        }}
+        error={errors.password ? t(errors.password) : null}
+        autoComplete="current-password"
+        textContentType="password"
+        returnKeyType="done"
+        onSubmitEditing={handleLogin}
+        editable={!isSubmitting}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>{t("auth.login")}</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.replace("/register")}
-      >
-        <Text style={styles.buttonText}>{t("auth.goToRegister")}</Text>
-      </TouchableOpacity>
-    </View>
+      {formError ? <Text style={authStyles.formError}>{t(formError)}</Text> : null}
+
+      <AuthButton
+        title={t("auth.login")}
+        onPress={handleLogin}
+        isLoading={isSubmitting}
+      />
+
+      <View style={authStyles.footer}>
+        <Text style={authStyles.footerText}>{t("auth.noAccount")}</Text>
+        <TouchableOpacity onPress={() => router.replace("/register")}>
+          <Text style={authStyles.link}>{t("auth.goToRegister")}</Text>
+        </TouchableOpacity>
+      </View>
+    </AuthScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 20,
-    backgroundColor: "#f5f5f5",
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 40,
-    color: "#333",
-  },
-  input: {
-    backgroundColor: "#908d8d",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  button: {
-    backgroundColor: "#007bff",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-});

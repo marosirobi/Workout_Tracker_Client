@@ -40,3 +40,20 @@ export function checkPassword(password: string): PasswordProblem | null {
   }
   return null;
 }
+
+export interface PasswordChecks {
+  length: boolean;
+  letter: boolean;
+  digit: boolean;
+  special: boolean;
+}
+
+export function getPasswordChecks(password: string): PasswordChecks {
+  const chars = Array.from(password);
+  return {
+    length: password.length >= PASSWORD_MIN_LENGTH,
+    letter: chars.some(isLetter),
+    digit: chars.some(isDigit),
+    special: chars.some((c) => !isLetter(c) && !isDigit(c) && !isSpace(c)),
+  };
+}
