@@ -52,13 +52,15 @@ export const liveDisplay: LiveWorkoutDisplay = {
 
   async show(snapshot) {
     if (!workoutNotification) return;
-    if (!(await hasPermission())) return;
+    const keepAlive = snapshot.type === "CARDIO";
+    if (!keepAlive && !(await hasPermission())) return;
 
     workoutNotification.show({
       ...toNotification(snapshot),
       chronometerBaseMs: snapshot.effectiveStartMs,
       isPaused: snapshot.isPaused,
       accentColor: ACCENT,
+      keepAlive,
     });
   },
 

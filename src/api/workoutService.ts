@@ -82,7 +82,6 @@ export interface WorkoutDetailResponse {
   type: "STRENGTH" | "CARDIO";
   startTime: string;
   endTime: string | null;
-  bodyWeightKg?: number | null;
   exercises?: WorkoutExerciseDetail[];
   cardioStats?: CardioStatsResponse | null;
   trackPoints?: TrackPointResponse[];
@@ -108,6 +107,7 @@ export interface WorkoutResponse {
   type: "STRENGTH" | "CARDIO";
   startTime: string;
   templateId?: number | null;
+  bodyWeightKg?: number | null;
   exercises?: WorkoutExerciseDetail[];
 }
 

@@ -1,7 +1,7 @@
 import { useWorkoutStore } from "@/store/workoutStore";
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 
 export const LOCATION_TASK_NAME = "workout-location-task";
 
@@ -62,6 +62,11 @@ export async function startLocationTracking(): Promise<TrackingMode> {
     return "denied";
   }
 
+  if (Platform.OS === "android") {
+    await startForegroundWatch();
+    return "background";
+  }
+
   let background = await Location.getBackgroundPermissionsAsync();
   if (background.status !== "granted" && background.canAskAgain) {
     await explainBackgroundPermission();
@@ -93,13 +98,16 @@ export async function startLocationTracking(): Promise<TrackingMode> {
     }
   }
 
-  if (!foregroundSubscription) {
-    foregroundSubscription = await Location.watchPositionAsync(
-      LOCATION_OPTIONS,
-      (locations) => saveLocations([locations]),
-    );
-  }
+  await startForegroundWatch();
   return "foreground";
+}
+
+async function startForegroundWatch(): Promise<void> {
+  if (foregroundSubscription) return;
+  foregroundSubscription = await Location.watchPositionAsync(
+    LOCATION_OPTIONS,
+    (location) => saveLocations([location]),
+  );
 }
 
 export async function stopLocationTracking(): Promise<void> {

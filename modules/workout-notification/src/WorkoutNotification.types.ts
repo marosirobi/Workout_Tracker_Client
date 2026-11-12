@@ -7,6 +7,7 @@ export type WorkoutNotificationData = {
   chronometerBaseMs: number;
   isPaused: boolean;
   accentColor: string;
+  keepAlive?: boolean;
 };
 
 export type WorkoutNotificationEvents = {

@@ -68,5 +68,6 @@ export async function startWorkout(
     .setActiveWorkout(created.id, created.type, created.startTime, {
       exercises,
       templateName: template?.name ?? null,
+      bodyWeightKg: created.bodyWeightKg ?? null,
     });
 }

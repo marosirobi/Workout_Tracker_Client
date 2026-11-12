@@ -89,9 +89,10 @@ export default function ActiveWorkoutScreen() {
     if (!activeWorkoutType) return;
 
     const startTracking = async () => {
-      await prepareLiveDisplay();
-
-      if (activeWorkoutType !== "CARDIO") return;
+      if (activeWorkoutType !== "CARDIO") {
+        await prepareLiveDisplay();
+        return;
+      }
 
       const mode = await startLocationTracking();
       if (mode === "denied") {
@@ -113,6 +114,8 @@ export default function ActiveWorkoutScreen() {
       } else {
         setGpsStatus("GPS active");
       }
+
+      await prepareLiveDisplay();
     };
     startTracking();
   }, [activeWorkoutType]);

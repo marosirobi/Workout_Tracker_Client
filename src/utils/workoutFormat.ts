@@ -1,4 +1,6 @@
 import type { WorkoutExercise } from "@/store/workoutStore";
+import { setVolume } from "@/utils/strengthAnalysis";
+import { DEFAULT_TRACKING_TYPE } from "@/utils/trackingTypes";
 
 export const formatDuration = (totalSecs: number): string => {
   const hours = Math.floor(totalSecs / 3600);
@@ -52,13 +54,21 @@ export const countCompletedSets = (exercises: WorkoutExercise[]): number =>
 export const getEffectiveStartMs = (startTime: string, totalPausedMs: number) =>
   new Date(startTime).getTime() + totalPausedMs;
 
-export const getTotalVolumeKg = (exercises: WorkoutExercise[]): number =>
+export const getTotalVolumeKg = (
+  exercises: WorkoutExercise[],
+  bodyWeightKg: number | null,
+): number =>
   exercises.reduce(
     (sum, ex) =>
       sum +
       ex.sets
         .filter((s) => s.isCompleted)
-        .reduce((setSum, s) => setSum + s.weight * s.reps, 0),
+        .reduce(
+          (setSum, s) =>
+            setSum +
+            setVolume(ex.trackingType ?? DEFAULT_TRACKING_TYPE, s, bodyWeightKg),
+          0,
+        ),
     0,
   );
 

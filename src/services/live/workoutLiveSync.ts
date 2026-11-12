@@ -47,7 +47,7 @@ function buildSnapshot(state: WorkoutState): LiveWorkoutSnapshot | null {
       ),
     ),
     completedSets: countCompletedSets(state.exercises),
-    volumeKg: getTotalVolumeKg(state.exercises),
+    volumeKg: getTotalVolumeKg(state.exercises, state.bodyWeightKg ?? null),
     exerciseName: current?.name ?? null,
     setNumber: current?.setNumber ?? null,
   };

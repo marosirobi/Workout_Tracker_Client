@@ -12,6 +12,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.kotlin.records.Field
@@ -25,6 +26,7 @@ class WorkoutNotificationData : Record {
   @Field val chronometerBaseMs: Double = 0.0
   @Field val isPaused: Boolean = false
   @Field val accentColor: String = "#FC4C02"
+  @Field val keepAlive: Boolean = false
 }
 
 class WorkoutNotificationModule : Module() {
@@ -53,6 +55,7 @@ class WorkoutNotificationModule : Module() {
     Function("show") { data: WorkoutNotificationData -> showNotification(data) }
 
     Function("hide") {
+      context.stopService(Intent(context, WorkoutTrackingService::class.java))
       NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
     }
 
@@ -102,7 +105,7 @@ class WorkoutNotificationModule : Module() {
   private fun showNotification(data: WorkoutNotificationData) {
     ensureChannel()
     val manager = NotificationManagerCompat.from(context)
-    if (!manager.areNotificationsEnabled()) return
+    if (!data.keepAlive && !manager.areNotificationsEnabled()) return
 
     val accent = try {
       Color.parseColor(data.accentColor)
@@ -154,6 +157,23 @@ class WorkoutNotificationModule : Module() {
 
     data.chipText?.let { builder.setShortCriticalText(it) }
 
-    manager.notify(NOTIFICATION_ID, builder.build())
+    val notification = builder.build()
+
+    if (data.keepAlive && !WorkoutTrackingService.isRunning) {
+      val intent = Intent(context, WorkoutTrackingService::class.java)
+        .putExtra(WorkoutTrackingService.EXTRA_NOTIFICATION, notification)
+      try {
+        ContextCompat.startForegroundService(context, intent)
+        return
+      } catch (e: Exception) {
+        // pl. hatterbol nem indithato: sima ertesites marad
+      }
+    }
+
+    try {
+      manager.notify(NOTIFICATION_ID, notification)
+    } catch (e: SecurityException) {
+      // nincs ertesitesi engedely
+    }
   }
 }

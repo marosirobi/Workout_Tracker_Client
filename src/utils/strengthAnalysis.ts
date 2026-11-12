@@ -42,7 +42,7 @@ export function computeMuscleGroupSets(
 
 export function setVolume(
   type: TrackingType,
-  set: ExerciseSetDetail,
+  set: Pick<ExerciseSetDetail, "weight" | "reps">,
   bodyWeightKg: number | null,
 ): number {
   const bodyWeight = bodyWeightKg ?? 0;
