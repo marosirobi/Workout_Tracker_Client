@@ -2,6 +2,7 @@ import type {
   ExerciseSetDetail,
   WorkoutExerciseDetail,
 } from "@/api/workoutService";
+import { useLocale } from "@/i18n/useLocale";
 import { rankLabel } from "@/utils/rankLabel";
 import {
   exerciseTrackingType,
@@ -15,7 +16,6 @@ import {
   formatWeight,
 } from "@/utils/workoutFormat";
 import type { TFunction } from "i18next";
-import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 
 interface Column {
@@ -30,7 +30,7 @@ const repsColumn = (width: number, t: TFunction): Column => ({
   render: (set) => `${set.reps}`,
 });
 
-function columnsFor(type: TrackingType, t: TFunction): Column[] {
+function columnsFor(type: TrackingType, t: TFunction, locale: string): Column[] {
   switch (type) {
     case "BODYWEIGHT":
       return [repsColumn(90, t)];
@@ -39,7 +39,7 @@ function columnsFor(type: TrackingType, t: TFunction): Column[] {
         {
           label: t("setColumns.plusWeight"),
           width: 90,
-          render: (set) => `+${formatWeight(set.weight)} kg`,
+          render: (set) => `+${formatWeight(set.weight, locale)} kg`,
         },
         repsColumn(50, t),
       ];
@@ -56,7 +56,7 @@ function columnsFor(type: TrackingType, t: TFunction): Column[] {
         {
           label: t("setColumns.weight"),
           width: 90,
-          render: (set) => `${formatWeight(set.weight)} kg`,
+          render: (set) => `${formatWeight(set.weight, locale)} kg`,
         },
         repsColumn(50, t),
       ];
@@ -70,10 +70,10 @@ export function StrengthExerciseCard({
   exercise: WorkoutExerciseDetail;
   bodyWeightKg: number | null;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useLocale();
   const type = exerciseTrackingType(exercise);
   const sets = exercise.sets;
-  const columns = columnsFor(type, t);
+  const columns = columnsFor(type, t, locale);
   const bestSet = findBestSet(type, sets);
 
   const headerValue =
@@ -81,7 +81,7 @@ export function StrengthExerciseCard({
       ? formatSetDuration(
           sets.reduce((sum, set) => sum + (set.durationSeconds ?? 0), 0),
         )
-      : `${formatVolume(exerciseVolume(exercise, bodyWeightKg))} kg`;
+      : `${formatVolume(exerciseVolume(exercise, bodyWeightKg), locale)} kg`;
 
   const recordLabel = rankLabel(exercise.weightRank, t);
   const isRecord = exercise.weightRank === 1;

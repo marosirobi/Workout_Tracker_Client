@@ -2,6 +2,7 @@ import { exerciseService, type Exercise } from "@/api/exerciseService";
 import { IconButton } from "@/components/IconButton";
 import { ExercisePicker } from "@/components/workout/ExercisePicker";
 import { SetRow } from "@/components/workout/SetRow";
+import { useLocale } from "@/i18n/useLocale";
 import { prepareLiveDisplay } from "@/services/live/workoutLiveSync";
 import { startLocationTracking } from "@/services/locationTask";
 import { discardActiveWorkout } from "@/services/workoutActions";
@@ -16,14 +17,15 @@ import {
 } from "@/utils/trackingTypes";
 import {
   formatDuration,
+  formatKm,
   formatPace,
+  formatSpeed,
   getAvgPaceMinutes,
   getCurrentPaceMinutes,
   getLiveSpeedMs,
 } from "@/utils/workoutFormat";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
   Alert,
   BackHandler,
@@ -38,7 +40,7 @@ import {
 type GpsStatus = "Searching" | "Denied" | "Foreground" | "Active";
 
 export default function ActiveWorkoutScreen() {
-  const { t } = useTranslation();
+  const { t, locale } = useLocale();
   const router = useRouter();
   const {
     activeWorkoutType,
@@ -271,7 +273,7 @@ export default function ActiveWorkoutScreen() {
           <View style={styles.heroDistanceBox}>
             <Text style={styles.heroDistanceLabel}>{t("active.distance")}</Text>
             <Text style={styles.heroDistanceValue}>
-              {totalDistanceKm.toFixed(2)}
+              {formatKm(totalDistanceKm, locale)}
             </Text>
             <Text style={styles.heroDistanceUnit}>{t("units.kilometers")}</Text>
           </View>
@@ -304,7 +306,7 @@ export default function ActiveWorkoutScreen() {
             <View style={styles.metricBox}>
               <Text style={styles.metricLabel}>{t("active.speed")}</Text>
               <Text style={styles.metricValue}>
-                {(liveSpeedMs * 3.6).toFixed(1)}
+                {formatSpeed(liveSpeedMs * 3.6, locale)}
               </Text>
               <Text style={styles.metricUnit}>km/h</Text>
             </View>

@@ -1,4 +1,5 @@
 import { currentLocale } from "@/i18n";
+import { formatDecimal, formatInteger } from "@/utils/numberFormat";
 import type { WorkoutExercise } from "@/store/workoutStore";
 import { setVolume } from "@/utils/strengthAnalysis";
 import { DEFAULT_TRACKING_TYPE } from "@/utils/trackingTypes";
@@ -88,10 +89,17 @@ export const getCurrentExerciseInfo = (
   };
 };
 
-export const formatWeight = (kg: number): string =>
-  `${Math.round(kg * 10) / 10}`;
-export const formatVolume = (kg: number): string =>
-  Math.round(kg).toLocaleString(currentLocale());
+export const formatWeight = (kg: number, locale: string): string =>
+  formatDecimal(kg, locale, 1, false);
+
+export const formatVolume = (kg: number, locale: string): string =>
+  formatInteger(kg, locale);
+
+export const formatKm = (km: number, locale: string, digits = 2): string =>
+  formatDecimal(km, locale, digits);
+
+export const formatSpeed = (kmh: number, locale: string): string =>
+  formatDecimal(kmh, locale, 1);
 
 export const formatSetDuration = (totalSeconds: number): string => {
   const rounded = Math.round(totalSeconds);

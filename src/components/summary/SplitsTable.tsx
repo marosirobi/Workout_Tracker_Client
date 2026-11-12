@@ -1,10 +1,10 @@
+import { useLocale } from "@/i18n/useLocale";
 import type { Split } from "@/utils/workoutAnalysis";
-import { formatPace } from "@/utils/workoutFormat";
-import { useTranslation } from "react-i18next";
+import { formatKm, formatPace } from "@/utils/workoutFormat";
 import { StyleSheet, Text, View } from "react-native";
 
 export function SplitsTable({ splits }: { splits: Split[] }) {
-  const { t } = useTranslation();
+  const { t, locale } = useLocale();
   if (splits.length === 0) return null;
 
   const fastestPace = Math.min(...splits.map((s) => s.pacedMinPerKm));
@@ -31,7 +31,7 @@ export function SplitsTable({ splits }: { splits: Split[] }) {
         return (
           <View key={split.index} style={styles.row}>
             <Text style={[styles.cellText, styles.kmColumn]}>
-              {isPartial ? split.distanceKm.toFixed(2) : split.index}
+              {isPartial ? formatKm(split.distanceKm, locale) : split.index}
             </Text>
             <Text style={[styles.cellText, styles.paceColumn]}>
               {formatPace(split.pacedMinPerKm)}

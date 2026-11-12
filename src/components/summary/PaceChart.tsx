@@ -1,9 +1,9 @@
 import { ChartTooltip } from "@/components/charts/ChartTooltip";
 import { findNearest, useChartScrub } from "@/hooks/useChartScrub";
+import { useLocale } from "@/i18n/useLocale";
 import type { PacePoint } from "@/utils/workoutAnalysis";
-import { formatPace } from "@/utils/workoutFormat";
+import { formatKm, formatPace } from "@/utils/workoutFormat";
 import { useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Line, Path, Text as SvgText } from "react-native-svg";
 
@@ -29,16 +29,11 @@ function percentile(sorted: number[], p: number): number {
 
 
 export function PaceChart({ series, avgPace }: Props) {
-  const { t, i18n } = useTranslation();
+  const { t, locale } = useLocale();
   const [width, setWidth] = useState(0);
   const { containerRef, measure, touchX, scrubProps } = useChartScrub();
 
   const allPoints = useMemo(() => series.flat(), [series]);
-
-  const formatKm = (km: number) =>
-    i18n.language === "en"
-      ? `${km.toFixed(2)} km`
-      : `${km.toFixed(2).replace(".", ",")} km`;
 
   const chart = useMemo(() => {
     if (allPoints.length < 2 || width === 0) return null;
@@ -197,7 +192,7 @@ export function PaceChart({ series, avgPace }: Props) {
             fontSize={11}
             textAnchor="end"
           >
-            {`${maxDistance.toFixed(1)} km`}
+            {`${formatKm(maxDistance, locale, 1)} km`}
           </SvgText>
         </Svg>
 
@@ -206,7 +201,7 @@ export function PaceChart({ series, avgPace }: Props) {
             x={x(selected.distanceKm)}
             containerWidth={width}
             value={`${formatPace(selected.paceMinPerKm)} /km`}
-            caption={formatKm(selected.distanceKm)}
+            caption={`${formatKm(selected.distanceKm, locale)} km`}
           />
         )}
       </>

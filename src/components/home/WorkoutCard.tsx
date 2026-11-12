@@ -2,6 +2,7 @@ import { WorkoutSummary } from "@/api/workoutService";
 import { useLocale } from "@/i18n/useLocale";
 import {
     formatDuration,
+    formatKm,
     formatPace,
     formatVolume,
     getAvgPaceMinutes,
@@ -24,13 +25,17 @@ function formatCardDate(date: string, locale: string): string {
   });
 }
 
-function buildStats(item: WorkoutSummary, t: TFunction): CardStat[] {
+function buildStats(
+  item: WorkoutSummary,
+  t: TFunction,
+  locale: string,
+): CardStat[] {
   const seconds = item.movingTimeSeconds ?? item.durationSeconds ?? 0;
 
   if (item.type === "CARDIO") {
     const km = item.totalDistance ?? 0;
     return [
-      { label: t("stats.distance"), value: `${km.toFixed(2)} km` },
+      { label: t("stats.distance"), value: `${formatKm(km, locale)} km` },
       {
         label: t("stats.pace"),
         value: `${formatPace(getAvgPaceMinutes(seconds, km))} /km`,
@@ -46,7 +51,7 @@ function buildStats(item: WorkoutSummary, t: TFunction): CardStat[] {
     { label: t("stats.time"), value: formatDuration(seconds) },
     {
       label: t("stats.volume"),
-      value: `${formatVolume(item.totalVolume ?? 0)} kg`,
+      value: `${formatVolume(item.totalVolume ?? 0, locale)} kg`,
     },
     { label: t("stats.sets"), value: `${item.totalSets ?? 0}` },
   ];
@@ -60,7 +65,7 @@ export function WorkoutCard({
   onPress: () => void;
 }) {
   const { t, locale } = useLocale();
-  const stats = buildStats(item, t);
+  const stats = buildStats(item, t, locale);
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>

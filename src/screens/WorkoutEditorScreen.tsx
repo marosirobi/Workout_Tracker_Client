@@ -11,7 +11,7 @@ import {
   type SetField,
 } from "@/components/workout/EditableExerciseCard";
 import { ExercisePicker } from "@/components/workout/ExercisePicker";
-import i18n from "@/i18n";
+import i18n, { currentLocale } from "@/i18n";
 import type { WorkoutType } from "@/store/workoutStore";
 import { formatDurationInput, parseDurationInput } from "@/utils/durationInput";
 import { formatDecimalInput, parseDecimalInput } from "@/utils/numberInput";
@@ -67,7 +67,7 @@ function toDraft(workout: WorkoutDetailResponse): Draft {
       trackingType: ex.trackingType ?? DEFAULT_TRACKING_TYPE,
       sets: ex.sets.map((set) => ({
         key: newKey(),
-        weight: formatDecimalInput(set.weight),
+        weight: formatDecimalInput(set.weight, currentLocale()),
         reps: set.reps > 0 ? String(set.reps) : "",
         duration: formatDurationInput(set.durationSeconds ?? 0),
       })),

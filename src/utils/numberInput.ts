@@ -1,3 +1,5 @@
+import { decimalSeparator } from "@/utils/numberFormat";
+
 export function sanitizeDecimal(text: string): string {
   const cleaned = text.replace(/[^0-9.,]/g, "");
   const firstSeparator = cleaned.search(/[.,]/);
@@ -19,7 +21,10 @@ export function parseDecimalInput(text: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-export function formatDecimalInput(value: number): string {
+export function formatDecimalInput(value: number, locale: string): string {
   if (!value) return "";
-  return String(Math.round(value * 100) / 100).replace(".", ",");
+  return String(Math.round(value * 100) / 100).replace(
+    ".",
+    decimalSeparator(locale),
+  );
 }

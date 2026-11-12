@@ -11,6 +11,7 @@ import {
 import { FilterChips, type FilterOption } from "@/components/FilterChips";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { StatRows } from "@/components/summary/StatRows";
+import { useLocale } from "@/i18n/useLocale";
 import { muscleGroupLabel } from "@/utils/muscleGroups";
 import {
   DEFAULT_TRACKING_TYPE,
@@ -24,7 +25,6 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import type { TFunction } from "i18next";
-import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   ScrollView,
@@ -89,22 +89,28 @@ function metricUnit(metric: ChartMetric, t: TFunction): string {
   }
 }
 
-function tickFormatter(metric: ChartMetric): (value: number) => string {
+function tickFormatter(
+  metric: ChartMetric,
+  locale: string,
+): (value: number) => string {
   switch (metric) {
     case "VOLUME":
-      return formatVolume;
+      return (value) => formatVolume(value, locale);
     case "REPS":
       return (value) => `${Math.round(value)}`;
     case "DURATION":
       return formatSetDuration;
     default:
-      return formatWeight;
+      return (value) => formatWeight(value, locale);
   }
 }
 
-const formatKg = (value: number) => `${formatWeight(value)} kg`;
-const formatPlusKg = (value: number) => `+${formatWeight(value)} kg`;
-const formatVolumeKg = (value: number) => `${formatVolume(value)} kg`;
+const kgFormatter = (locale: string) => (value: number) =>
+  `${formatWeight(value, locale)} kg`;
+const plusKgFormatter = (locale: string) => (value: number) =>
+  `+${formatWeight(value, locale)} kg`;
+const volumeKgFormatter = (locale: string) => (value: number) =>
+  `${formatVolume(value, locale)} kg`;
 const repsFormatter = (t: TFunction) => (value: number) =>
   `${Math.round(value)} ${t("units.reps")}`;
 
@@ -112,7 +118,11 @@ function valueFormatter(
   metric: ChartMetric,
   type: TrackingType,
   t: TFunction,
+  locale: string,
 ): (value: number) => string {
+  const formatKg = kgFormatter(locale);
+  const formatPlusKg = plusKgFormatter(locale);
+  const formatVolumeKg = volumeKgFormatter(locale);
   switch (metric) {
     case "VOLUME":
       return formatVolumeKg;
@@ -137,7 +147,11 @@ function recordValue(
 function recordRows(
   stats: ExerciseStats,
   t: TFunction,
+  locale: string,
 ): { label: string; value: string }[] {
+  const formatKg = kgFormatter(locale);
+  const formatPlusKg = plusKgFormatter(locale);
+  const formatVolumeKg = volumeKgFormatter(locale);
   const type = stats.trackingType ?? DEFAULT_TRACKING_TYPE;
 
   const volumeRows = [
@@ -190,7 +204,7 @@ function recordRows(
 }
 
 export default function ExerciseDetailScreen() {
-  const { t } = useTranslation();
+  const { t, locale } = useLocale();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
@@ -264,8 +278,8 @@ export default function ExerciseDetailScreen() {
             <ProgressChart
               points={chartPoints}
               unit={metricUnit(metric, t)}
-              formatTick={tickFormatter(metric)}
-              formatValue={valueFormatter(metric, trackingType, t)}
+              formatTick={tickFormatter(metric, locale)}
+              formatValue={valueFormatter(metric, trackingType, t, locale)}
             />
 
             {options.length > 1 && (
@@ -279,7 +293,7 @@ export default function ExerciseDetailScreen() {
             )}
 
             <Text style={styles.sectionTitle}>{t("exerciseDetail.records")}</Text>
-            <StatRows rows={recordRows(stats, t)} />
+            <StatRows rows={recordRows(stats, t, locale)} />
           </>
         )}
       </>

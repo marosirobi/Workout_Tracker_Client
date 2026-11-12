@@ -22,7 +22,9 @@ import {
 } from "@/utils/workoutAnalysis";
 import {
   formatDuration,
+  formatKm,
   formatPace,
+  formatSpeed,
   formatVolume,
   formatWeight,
 } from "@/utils/workoutFormat";
@@ -208,7 +210,7 @@ export default function WorkoutDetailsScreen() {
                 items={[
                   {
                     label: t("stats.distance"),
-                    value: summary.distanceKm.toFixed(2),
+                    value: formatKm(summary.distanceKm, locale),
                     unit: "km",
                   },
                   {
@@ -230,11 +232,11 @@ export default function WorkoutDetailsScreen() {
                   },
                   {
                     label: t("stats.avgSpeed"),
-                    value: `${summary.avgSpeedKmh.toFixed(1)} km/h`,
+                    value: `${formatSpeed(summary.avgSpeedKmh, locale)} km/h`,
                   },
                   {
                     label: t("stats.maxSpeed"),
-                    value: `${summary.maxSpeedKmh.toFixed(1)} km/h`,
+                    value: `${formatSpeed(summary.maxSpeedKmh, locale)} km/h`,
                   },
                   {
                     label: t("stats.elevationGain"),
@@ -261,7 +263,7 @@ export default function WorkoutDetailsScreen() {
                   },
                   {
                     label: t("stats.volume"),
-                    value: formatVolume(strengthSummary.totalVolumeKg),
+                    value: formatVolume(strengthSummary.totalVolumeKg, locale),
                     unit: "kg",
                   },
                   {
@@ -284,7 +286,7 @@ export default function WorkoutDetailsScreen() {
                     ? [
                         {
                           label: t("stats.heaviestWeight"),
-                          value: `${formatWeight(strengthSummary.heaviestWeightKg)} kg`,
+                          value: `${formatWeight(strengthSummary.heaviestWeightKg, locale)} kg`,
                         },
                       ]
                     : []),

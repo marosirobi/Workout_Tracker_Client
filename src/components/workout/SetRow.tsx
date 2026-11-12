@@ -1,3 +1,4 @@
+import { currentLocale } from "@/i18n";
 import type { ExerciseSet } from "@/store/workoutStore";
 import {
   formatDurationInput,
@@ -44,7 +45,7 @@ export function SetRow({
 }: SetRowProps) {
   const { t } = useTranslation();
   const [weightText, setWeightText] = useState(() =>
-    formatDecimalInput(set.weight),
+    formatDecimalInput(set.weight, currentLocale()),
   );
   const [durationText, setDurationText] = useState(() =>
     formatDurationInput(set.durationSeconds ?? 0),

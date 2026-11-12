@@ -1,5 +1,5 @@
-import i18n from "@/i18n";
-import { formatDuration } from "@/utils/workoutFormat";
+import i18n, { currentLocale } from "@/i18n";
+import { formatDuration, formatKm, formatVolume } from "@/utils/workoutFormat";
 import { PermissionsAndroid, Platform } from "react-native";
 import workoutNotification from "../../../modules/workout-notification";
 import type { LiveWorkoutDisplay, LiveWorkoutSnapshot } from "./types";
@@ -20,7 +20,7 @@ function toNotification(s: LiveWorkoutSnapshot) {
     : "";
 
   if (s.type === "CARDIO") {
-    const km = s.distanceKm.toFixed(2);
+    const km = formatKm(s.distanceKm, currentLocale());
     return {
       title: s.isPaused
         ? i18n.t("notification.cardioPausedTitle", { km })
@@ -30,7 +30,7 @@ function toNotification(s: LiveWorkoutSnapshot) {
         i18n.t("notification.cardioText", { pace: s.currentPace, avg: s.avgPace }),
       chipText: s.isPaused
         ? i18n.t("notification.paused")
-        : `${s.distanceKm.toFixed(1)} km`,
+        : `${formatKm(s.distanceKm, currentLocale(), 1)} km`,
     };
   }
 
@@ -47,7 +47,7 @@ function toNotification(s: LiveWorkoutSnapshot) {
       pausedPrefix +
       i18n.t("notification.strengthText", {
         exercise,
-        volume: Math.round(s.volumeKg),
+        volume: formatVolume(s.volumeKg, currentLocale()),
       }),
     chipText: s.isPaused ? i18n.t("notification.paused") : null,
   };

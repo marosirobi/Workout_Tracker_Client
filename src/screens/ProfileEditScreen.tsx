@@ -1,6 +1,6 @@
 import { userService } from "@/api/userService";
 import { EditorHeader } from "@/components/EditorHeader";
-import i18n from "@/i18n";
+import i18n, { currentLocale } from "@/i18n";
 import { useAuthStore } from "@/store/authStore";
 import {
   isValidEmail,
@@ -81,7 +81,7 @@ export default function ProfileEditScreen() {
         const loaded: Draft = {
           username: me.username,
           email: me.email,
-          bodyWeight: formatDecimalInput(me.bodyWeightKg ?? 0),
+          bodyWeight: formatDecimalInput(me.bodyWeightKg ?? 0, currentLocale()),
         };
         setDraft(loaded);
         setInitialDraft(loaded);
