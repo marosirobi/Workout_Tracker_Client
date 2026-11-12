@@ -8,9 +8,10 @@ import {
   useWorkoutStore,
   type WorkoutExercise,
 } from "@/store/workoutStore";
-import { DEFAULT_TITLES } from "@/utils/workoutDefaults";
+import { defaultWorkoutTitle } from "@/utils/workoutDefaults";
 import { getAvgPaceMinutes } from "@/utils/workoutFormat";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -46,6 +47,7 @@ function buildStrengthExercises(exercises: WorkoutExercise[]) {
 }
 
 export default function SaveWorkoutScreen() {
+  const { t } = useTranslation();
   const {
     activeWorkoutId,
     startTime,
@@ -66,7 +68,7 @@ export default function SaveWorkoutScreen() {
   const [isDiscarding, setIsDiscarding] = useState(false);
   const isBusy = isSaving || isDiscarding;
   const defaultTitle =
-    templateName ?? DEFAULT_TITLES[activeWorkoutType ?? "CARDIO"];
+    templateName ?? defaultWorkoutTitle(activeWorkoutType ?? "CARDIO", t);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
@@ -117,10 +119,7 @@ export default function SaveWorkoutScreen() {
       activeWorkoutType === "STRENGTH" &&
       buildStrengthExercises(exercises).length === 0
     ) {
-      Alert.alert(
-        "Üres edzés",
-        "Egy szettet sem pipáltál ki. Pipáld ki az elvégzett szetteket, vagy vesd el az edzést.",
-      );
+      Alert.alert(t("saveWorkout.emptyTitle"), t("saveWorkout.emptyMessage"));
       return;
     }
 
@@ -140,16 +139,13 @@ export default function SaveWorkoutScreen() {
       const status = error.response?.status;
       if (status === 404 || status === 400) {
         Alert.alert(
-          "Az edzés nem található",
-          "Ez az edzés már nem létezik a szerveren. A helyi adatok törlésre kerülnek.",
-          [{ text: "Rendben", onPress: () => endActiveWorkoutLocally() }],
+          t("saveWorkout.notFoundTitle"),
+          t("saveWorkout.notFoundMessage"),
+          [{ text: t("common.ok"), onPress: () => endActiveWorkoutLocally() }],
         );
         return;
       }
-      Alert.alert(
-        "Sikertelen mentés",
-        "Nem sikerült elmenteni az edzést. Ellenőrizd az internetkapcsolatot, és próbáld újra!",
-      );
+      Alert.alert(t("common.saveFailed"), t("saveWorkout.failedMessage"));
     } finally {
       setIsSaving(false);
     }
@@ -163,8 +159,8 @@ export default function SaveWorkoutScreen() {
       await discardActiveWorkout();
     } catch {
       Alert.alert(
-        "Sikertelen elvetés",
-        "Nem sikerült törölni az edzést a szerverről. Ellenőrizd az internetkapcsolatot!",
+        t("active.discardFailedTitle"),
+        t("active.discardFailedMessage"),
       );
     } finally {
       setIsDiscarding(false);
@@ -173,14 +169,10 @@ export default function SaveWorkoutScreen() {
 
   const confirmDiscard = async () => {
     if (isBusy) return;
-    Alert.alert(
-      "Edzés elvetése",
-      "Biztosan elveted ezt az edzést? Ez nem vonható vissza.",
-      [
-        { text: "Mégsem", style: "cancel" },
-        { text: "Elvetés", style: "destructive", onPress: discard },
-      ],
-    );
+    Alert.alert(t("saveWorkout.discard"), t("saveWorkout.discardConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("common.discard"), style: "destructive", onPress: discard },
+    ]);
   };
 
   return (
@@ -193,10 +185,10 @@ export default function SaveWorkoutScreen() {
           hitSlop={12}
         >
           <Text style={[styles.headerAction, isBusy && styles.disabled]}>
-            Folytatás
+            {t("saveWorkout.resume")}
           </Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edzés mentése</Text>
+        <Text style={styles.headerTitle}>{t("saveWorkout.title")}</Text>
         <View style={styles.headerSide} />
       </View>
 
@@ -208,7 +200,7 @@ export default function SaveWorkoutScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.label}>CÍM</Text>
+          <Text style={styles.label}>{t("saveWorkout.titleLabel")}</Text>
           <TextInput
             style={styles.input}
             value={title}
@@ -219,12 +211,12 @@ export default function SaveWorkoutScreen() {
             returnKeyType="next"
             editable={!isBusy}
           />
-          <Text style={styles.label}>MEGJEGYZES</Text>
+          <Text style={styles.label}>{t("saveWorkout.noteLabel")}</Text>
           <TextInput
             style={[styles.input, styles.noteInput]}
             value={note}
             onChangeText={setNote}
-            placeholder="Hogy ment az edzés?"
+            placeholder={t("saveWorkout.notePlaceholder")}
             placeholderTextColor="#5A5A5E"
             multiline
             maxLength={MAX_TEXT_LENGTH}
@@ -243,7 +235,7 @@ export default function SaveWorkoutScreen() {
             {isSaving ? (
               <ActivityIndicator color="#FFF" />
             ) : (
-              <Text style={styles.saveButtonText}>Mentés</Text>
+              <Text style={styles.saveButtonText}>{t("common.save")}</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity
@@ -255,7 +247,7 @@ export default function SaveWorkoutScreen() {
               <ActivityIndicator color="#FF453A" />
             ) : (
               <Text style={[styles.discardText, isBusy && styles.disabled]}>
-                Edzés elvetése
+                {t("saveWorkout.discard")}
               </Text>
             )}
           </TouchableOpacity>

@@ -1,4 +1,5 @@
 import { ExerciseRecord } from "@/api/exerciseService";
+import { useLocale } from "@/i18n/useLocale";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export interface RecordItem {
@@ -7,8 +8,8 @@ export interface RecordItem {
   format: (value: number) => string;
 }
 
-function formatRecordDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("hu-HU", {
+function formatRecordDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -22,6 +23,8 @@ export function RecordGrid({
   items: RecordItem[];
   onPressRecord?: (workoutId: number) => void;
 }) {
+  const { t, locale } = useLocale();
+
   return (
     <View>
       {items.map((item) => {
@@ -40,7 +43,7 @@ export function RecordGrid({
               {record ? item.format(record.value) : "-"}
             </Text>
             <Text style={styles.date}>
-              {record ? formatRecordDate(record.date) : "Nincs adat"}
+              {record ? formatRecordDate(record.date, locale) : t("common.noData")}
             </Text>
           </TouchableOpacity>
         );

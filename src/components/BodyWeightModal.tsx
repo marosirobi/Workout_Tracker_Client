@@ -1,6 +1,7 @@
 import { validateBodyWeight } from "@/utils/bodyWeight";
 import { parseDecimalInput, sanitizeDecimal } from "@/utils/numberInput";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -26,6 +27,7 @@ export function BodyWeightModal({
   onSubmit,
   onCancel,
 }: BodyWeightModalProps) {
+  const { t } = useTranslation();
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -57,11 +59,8 @@ export function BodyWeightModal({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.card}>
-          <Text style={styles.title}>Add meg a testsúlyod</Text>
-          <Text style={styles.text}>
-            A testsúlyos gyakorlatok (például húzódzkodás) volumenét ebből
-            számoljuk. Később a profilodban bármikor módosíthatod.
-          </Text>
+          <Text style={styles.title}>{t("bodyWeight.title")}</Text>
+          <Text style={styles.text}>{t("bodyWeight.text")}</Text>
 
           <View style={styles.inputRow}>
             <TextInput
@@ -72,7 +71,7 @@ export function BodyWeightModal({
                 setError(null);
               }}
               keyboardType="decimal-pad"
-              placeholder="pl. 82,5"
+              placeholder={t("common.weightPlaceholder")}
               placeholderTextColor="#5A5A5E"
               maxLength={6}
               autoFocus
@@ -90,7 +89,7 @@ export function BodyWeightModal({
             {isSaving ? (
               <ActivityIndicator color="#FFF" />
             ) : (
-              <Text style={styles.primaryText}>Mentés és indítás</Text>
+              <Text style={styles.primaryText}>{t("bodyWeight.saveAndStart")}</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity
@@ -99,7 +98,7 @@ export function BodyWeightModal({
             disabled={isSaving}
           >
             <Text style={[styles.secondaryText, isSaving && styles.disabled]}>
-              Mégsem
+              {t("common.cancel")}
             </Text>
           </TouchableOpacity>
         </View>

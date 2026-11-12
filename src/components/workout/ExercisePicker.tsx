@@ -1,5 +1,6 @@
 import type { Exercise } from "@/api/exerciseService";
 import { MuscleGroup } from "@/utils/muscleGroups";
+import { useTranslation } from "react-i18next";
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ExerciseBrowser } from "./ExerciseBrowser";
@@ -23,6 +24,8 @@ export function ExercisePicker({
   onClose,
   onInfo,
 }: ExercisePickerProps) {
+  const { t } = useTranslation();
+
   return (
     <Modal
       visible={visible}
@@ -32,9 +35,9 @@ export function ExercisePicker({
     >
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Válassz gyakorlatot</Text>
+          <Text style={styles.headerTitle}>{t("exercisePicker.title")}</Text>
           <TouchableOpacity onPress={onClose} hitSlop={12}>
-            <Text style={styles.headerAction}>Mégse</Text>
+            <Text style={styles.headerAction}>{t("common.cancel")}</Text>
           </TouchableOpacity>
         </View>
 

@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import { getElapsedSeconds, useWorkoutStore } from "@/store/workoutStore";
 import {
   countCompletedSets,
@@ -120,6 +121,11 @@ export async function startWorkoutLiveSync(): Promise<void> {
       });
     });
   }
+
+  i18n.on("languageChanged", () => {
+    lastKey = "";
+    sync(true);
+  });
 
   liveDisplay.addActionListener((action) => {
     const { pauseWorkout, resumeWorkout } = useWorkoutStore.getState();

@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import { useWorkoutStore } from "@/store/workoutStore";
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
@@ -49,9 +50,9 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
 const explainBackgroundPermission = () =>
   new Promise<void>((resolve) => {
     Alert.alert(
-      "Mérés lezárt képernyővel",
-      'Hogy az edzés akkor is mérjen, amikor a telefon le van zárva, a következő ablakban válaszd a "Mindig engedélyezve" lehetőséget.',
-      [{ text: "Rendben", onPress: () => resolve() }],
+      i18n.t("location.backgroundTitle"),
+      i18n.t("location.backgroundMessage"),
+      [{ text: i18n.t("common.ok"), onPress: () => resolve() }],
       { cancelable: false },
     );
   });
@@ -86,8 +87,8 @@ export async function startLocationTracking(): Promise<TrackingMode> {
           showsBackgroundLocationIndicator: true,
 
           foregroundService: {
-            notificationTitle: "Helymeghatározás aktiv",
-            notificationBody: "Az edzés útvonalának rögzitése",
+            notificationTitle: i18n.t("location.notificationTitle"),
+            notificationBody: i18n.t("location.notificationBody"),
             killServiceOnDestroy: false,
           },
         });

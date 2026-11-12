@@ -1,5 +1,6 @@
 import { ChartTooltip } from "@/components/charts/ChartTooltip";
 import { findNearest, useChartScrub } from "@/hooks/useChartScrub";
+import { useLocale } from "@/i18n/useLocale";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import Svg, { Circle, Line, Path, Text as SvgText } from "react-native-svg";
@@ -51,15 +52,15 @@ function buildAxis(values: number[]) {
   return { axisMin: Math.max(0, axisMin), axisMax, ticks };
 }
 
-function formatAxisDate(time: number): string {
-  return new Date(time).toLocaleDateString("hu-HU", {
+function formatAxisDate(time: number, locale: string): string {
+  return new Date(time).toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
   });
 }
 
-function formatTooltipDate(time: number): string {
-  return new Date(time).toLocaleDateString("hu-HU", {
+function formatTooltipDate(time: number, locale: string): string {
+  return new Date(time).toLocaleDateString(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -80,6 +81,7 @@ export function ProgressChart({
   formatValue,
 }: ProgressChartProps) {
   const [width, setWidth] = useState(0);
+  const { locale } = useLocale();
   const { containerRef, measure, touchX, scrubProps } = useChartScrub();
 
   const renderChart = () => {
@@ -213,7 +215,7 @@ export function ProgressChart({
                 fill={LABEL_COLOR}
                 fontSize={11}
               >
-                {formatAxisDate(firstTime)}
+                {formatAxisDate(firstTime, locale)}
               </SvgText>
               <SvgText
                 x={width - PAD_RIGHT}
@@ -222,7 +224,7 @@ export function ProgressChart({
                 fontSize={11}
                 textAnchor="end"
               >
-                {formatAxisDate(lastTime)}
+                {formatAxisDate(lastTime, locale)}
               </SvgText>
             </>
           ) : (
@@ -233,7 +235,7 @@ export function ProgressChart({
               fontSize={11}
               textAnchor="middle"
             >
-              {formatAxisDate(firstTime)}
+              {formatAxisDate(firstTime, locale)}
             </SvgText>
           )}
         </Svg>
@@ -243,7 +245,7 @@ export function ProgressChart({
             x={x(selected.time)}
             containerWidth={width}
             value={formatValue(selected.value)}
-            caption={formatTooltipDate(selected.time)}
+            caption={formatTooltipDate(selected.time, locale)}
           />
         )}
       </>

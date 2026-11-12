@@ -1,5 +1,6 @@
 import { userService, type UserResponse } from "@/api/userService";
 import { startWorkout, type TemplateToStart } from "@/services/workoutActions";
+import i18n from "@/i18n";
 import { useAuthStore } from "@/store/authStore";
 import { WorkoutType } from "@/store/workoutStore";
 import { useRef, useState } from "react";
@@ -55,10 +56,7 @@ export function useStartWorkout() {
         "Hiba a testsúly mentésekor:",
         error.response?.data || error.message,
       );
-      Alert.alert(
-        "Sikertelen mentés",
-        "Nem sikerült elmenteni a testsúlyt. Próbáld újra!",
-      );
+      Alert.alert(i18n.t("common.saveFailed"), i18n.t("bodyWeight.saveFailed"));
     } finally {
       setIsSavingWeight(false);
     }
@@ -78,10 +76,7 @@ export function useStartWorkout() {
         "Hiba az edzés indításakor:",
         error.response?.data || error.message,
       );
-      Alert.alert(
-        "Hiba",
-        "Nem sikerült elindítani az edzést. Ellenőrizd az internetkapcsolatot!",
-      );
+      Alert.alert(i18n.t("common.error"), i18n.t("startWorkout.failed"));
     } finally {
       setIsStarting(false);
     }

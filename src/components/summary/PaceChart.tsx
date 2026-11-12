@@ -3,6 +3,7 @@ import { findNearest, useChartScrub } from "@/hooks/useChartScrub";
 import type { PacePoint } from "@/utils/workoutAnalysis";
 import { formatPace } from "@/utils/workoutFormat";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Line, Path, Text as SvgText } from "react-native-svg";
 
@@ -26,13 +27,18 @@ function percentile(sorted: number[], p: number): number {
   return sorted[Math.min(sorted.length - 1, Math.max(0, index))];
 }
 
-const formatKm = (km: number) => `${km.toFixed(2).replace(".", ",")} km`;
 
 export function PaceChart({ series, avgPace }: Props) {
+  const { t, i18n } = useTranslation();
   const [width, setWidth] = useState(0);
   const { containerRef, measure, touchX, scrubProps } = useChartScrub();
 
   const allPoints = useMemo(() => series.flat(), [series]);
+
+  const formatKm = (km: number) =>
+    i18n.language === "en"
+      ? `${km.toFixed(2)} km`
+      : `${km.toFixed(2).replace(".", ",")} km`;
 
   const chart = useMemo(() => {
     if (allPoints.length < 2 || width === 0) return null;
@@ -154,7 +160,7 @@ export function PaceChart({ series, avgPace }: Props) {
                 fontSize={11}
                 textAnchor="end"
               >
-                {`Átl. ${formatPace(avgPace)}`}
+                {t("workoutDetail.avgShort", { pace: formatPace(avgPace) })}
               </SvgText>
             </>
           )}
@@ -209,7 +215,7 @@ export function PaceChart({ series, avgPace }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>TEMPÓ</Text>
+      <Text style={styles.title}>{t("workoutDetail.paceChart")}</Text>
 
       <View
         ref={containerRef}

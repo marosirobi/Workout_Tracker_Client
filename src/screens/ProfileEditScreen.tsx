@@ -1,5 +1,6 @@
 import { userService } from "@/api/userService";
 import { EditorHeader } from "@/components/EditorHeader";
+import i18n from "@/i18n";
 import { useAuthStore } from "@/store/authStore";
 import { validateBodyWeight } from "@/utils/bodyWeight";
 import {
@@ -10,6 +11,7 @@ import {
 import { useRouter } from "expo-router";
 import { useNavigation, usePreventRemove } from "expo-router/react-navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -35,15 +37,16 @@ const EMPTY_DRAFT: Draft = { username: "", email: "", bodyWeight: "" };
 
 function validate(draft: Draft): string | null {
   if (draft.username.trim() === "") {
-    return "Add meg a felhasználóneved.";
+    return i18n.t("profileEdit.usernameRequired");
   }
   if (!EMAIL_PATTERN.test(draft.email.trim())) {
-    return "Érvénytelen e-mail cím.";
+    return i18n.t("profileEdit.invalidEmail");
   }
   return validateBodyWeight(draft.bodyWeight);
 }
 
 export default function ProfileEditScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const navigation = useNavigation();
   const { setTokens, updateUser } = useAuthStore();
@@ -75,7 +78,7 @@ export default function ProfileEditScreen() {
           error.response?.data || error.message,
         );
         if (isActive) {
-          Alert.alert("Hiba", "Nem sikerült betölteni a profilt.");
+          Alert.alert(t("common.error"), t("profileEdit.loadFailed"));
           setIsDone(true);
         }
       } finally {
@@ -87,7 +90,7 @@ export default function ProfileEditScreen() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (isDone) router.back();
@@ -100,12 +103,12 @@ export default function ProfileEditScreen() {
 
   usePreventRemove(isDirty && !isDone, ({ data }) => {
     Alert.alert(
-      "Elveted a módosításokat?",
-      "A nem mentett változások elvesznek.",
+      t("common.discardChangesTitle"),
+      t("common.discardChangesMessage"),
       [
-        { text: "Maradok", style: "cancel" },
+        { text: t("common.stay"), style: "cancel" },
         {
-          text: "Elvetés",
+          text: t("common.discard"),
           style: "destructive",
           onPress: () => navigation.dispatch(data.action),
         },
@@ -121,7 +124,7 @@ export default function ProfileEditScreen() {
 
     const error = validate(draft);
     if (error) {
-      Alert.alert("Hibás adat", error);
+      Alert.alert(t("common.invalidData"), error);
       return;
     }
 
@@ -150,10 +153,9 @@ export default function ProfileEditScreen() {
       );
       const message =
         error.response?.status === 409
-          ? error.response?.data?.message ??
-            "Ez a felhasználónév vagy e-mail már foglalt."
-          : "Nem sikerült elmenteni a profilt.";
-      Alert.alert("Sikertelen mentés", message);
+          ? error.response?.data?.message ?? t("profileEdit.taken")
+          : t("profileEdit.saveFailed");
+      Alert.alert(t("common.saveFailed"), message);
     } finally {
       setIsSaving(false);
     }
@@ -170,7 +172,7 @@ export default function ProfileEditScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <EditorHeader
-        title="Profil szerkesztése"
+        title={t("profile.editProfile")}
         onCancel={() => router.back()}
         onSave={handleSave}
         isSaving={isSaving}
@@ -184,7 +186,7 @@ export default function ProfileEditScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.label}>FELHASZNÁLÓNÉV</Text>
+          <Text style={styles.label}>{t("profileEdit.username")}</Text>
           <TextInput
             style={styles.input}
             value={draft.username}
@@ -197,7 +199,7 @@ export default function ProfileEditScreen() {
             editable={!isSaving}
           />
 
-          <Text style={styles.label}>E-MAIL</Text>
+          <Text style={styles.label}>{t("profileEdit.email")}</Text>
           <TextInput
             style={styles.input}
             value={draft.email}
@@ -212,7 +214,7 @@ export default function ProfileEditScreen() {
             editable={!isSaving}
           />
 
-          <Text style={styles.label}>TESTSÚLY (KG)</Text>
+          <Text style={styles.label}>{t("profileEdit.bodyWeight")}</Text>
           <TextInput
             style={styles.input}
             value={draft.bodyWeight}
@@ -223,15 +225,12 @@ export default function ProfileEditScreen() {
               }))
             }
             keyboardType="decimal-pad"
-            placeholder="pl. 82,5"
+            placeholder={t("common.weightPlaceholder")}
             placeholderTextColor="#5A5A5E"
             maxLength={6}
             editable={!isSaving}
           />
-          <Text style={styles.hint}>
-            Az új edzéseid ezzel a testsúllyal számolnak. A már elmentett
-            edzéseket nem változtatja meg.
-          </Text>
+          <Text style={styles.hint}>{t("profileEdit.hint")}</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

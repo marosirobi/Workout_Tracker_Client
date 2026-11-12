@@ -5,7 +5,8 @@ import { useAuthStore } from "@/store/authStore";
 import { WorkoutType } from "@/store/workoutStore";
 import { tabStyles } from "@/styles/tabScreen";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   FlatList,
@@ -18,16 +19,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 type Filter = "ALL" | WorkoutType;
 
-const FILTER_OPTIONS: FilterOption<Filter>[] = [
-  { value: "ALL", label: "Mind" },
-  { value: "CARDIO", label: "Kardió" },
-  { value: "STRENGTH", label: "Erőedzés" },
-];
-
 const PAGE_SIZE = 10;
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
+
+  const filterOptions = useMemo<FilterOption<Filter>[]>(
+    () => [
+      { value: "ALL", label: t("common.all") },
+      { value: "CARDIO", label: t("workoutType.CARDIO") },
+      { value: "STRENGTH", label: t("workoutType.STRENGTH") },
+    ],
+    [t],
+  );
   const router = useRouter();
 
   const [filter, setFilter] = useState<Filter>("ALL");
@@ -112,6 +117,7 @@ export default function HomeScreen() {
       <FlatList
         data={workouts}
         keyExtractor={(item) => item.id.toString()}
+        extraData={t}
         renderItem={({ item }) => (
           <WorkoutCard
             item={item}
@@ -121,9 +127,11 @@ export default function HomeScreen() {
         contentContainerStyle={tabStyles.content}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={tabStyles.title}>Szia, {user?.username}!</Text>
+            <Text style={tabStyles.title}>
+              {t("home.greeting", { name: user?.username ?? "" })}
+            </Text>
             <FilterChips
-              options={FILTER_OPTIONS}
+              options={filterOptions}
               selected={filter}
               onSelect={handleFilterChange}
             />
@@ -134,9 +142,7 @@ export default function HomeScreen() {
             <ActivityIndicator color="#FC4C02" style={styles.spinner} />
           ) : (
             <Text style={tabStyles.mutedText}>
-              {filter === "ALL"
-                ? "Még nincs edzésed."
-                : "Ebben a kategóriában még nincs edzésed."}
+              {filter === "ALL" ? t("home.empty") : t("home.emptyFiltered")}
             </Text>
           )
         }

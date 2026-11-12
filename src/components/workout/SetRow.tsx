@@ -18,6 +18,7 @@ import {
 } from "@/utils/trackingTypes";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   StyleSheet,
   Text,
@@ -41,6 +42,7 @@ export function SetRow({
   onStartTimer,
   onStopTimer,
 }: SetRowProps) {
+  const { t } = useTranslation();
   const [weightText, setWeightText] = useState(() =>
     formatDecimalInput(set.weight),
   );
@@ -155,7 +157,7 @@ export function SetRow({
               <Text style={styles.unit}>{weightUnitLabel(trackingType)}</Text>
             </>
           ) : (
-            <Text style={styles.bodyweight}>Testsúly</Text>
+            <Text style={styles.bodyweight}>{t("setHeaders.bodyweight")}</Text>
           )}
 
           {usesReps(trackingType) && (
@@ -170,7 +172,7 @@ export function SetRow({
                 maxLength={4}
                 editable={editable}
               />
-              <Text style={styles.unit}>ism</Text>
+              <Text style={styles.unit}>{t("units.reps")}</Text>
             </>
           )}
         </>

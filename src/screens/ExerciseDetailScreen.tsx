@@ -11,7 +11,7 @@ import {
 import { FilterChips, type FilterOption } from "@/components/FilterChips";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { StatRows } from "@/components/summary/StatRows";
-import { MUSCLE_GROUP_LABELS } from "@/utils/muscleGroups";
+import { muscleGroupLabel } from "@/utils/muscleGroups";
 import {
   DEFAULT_TRACKING_TYPE,
   type TrackingType,
@@ -23,6 +23,8 @@ import {
 } from "@/utils/workoutFormat";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
+import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   ScrollView,
@@ -34,26 +36,29 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 type ChartMetric = "WEIGHT" | "ONE_REP_MAX" | "VOLUME" | "REPS" | "DURATION";
 
-function metricOptions(type: TrackingType): FilterOption<ChartMetric>[] {
+function metricOptions(
+  type: TrackingType,
+  t: TFunction,
+): FilterOption<ChartMetric>[] {
   switch (type) {
     case "BODYWEIGHT":
       return [
-        { value: "REPS", label: "Ismétlés" },
-        { value: "VOLUME", label: "Volumen" },
+        { value: "REPS", label: t("exerciseDetail.metricReps") },
+        { value: "VOLUME", label: t("exerciseDetail.metricVolume") },
       ];
     case "WEIGHTED_BODYWEIGHT":
       return [
-        { value: "WEIGHT", label: "Plusz súly" },
-        { value: "REPS", label: "Ismétlés" },
-        { value: "VOLUME", label: "Volumen" },
+        { value: "WEIGHT", label: t("exerciseDetail.metricPlusWeight") },
+        { value: "REPS", label: t("exerciseDetail.metricReps") },
+        { value: "VOLUME", label: t("exerciseDetail.metricVolume") },
       ];
     case "DURATION":
-      return [{ value: "DURATION", label: "Idő" }];
+      return [{ value: "DURATION", label: t("exerciseDetail.metricTime") }];
     default:
       return [
-        { value: "WEIGHT", label: "Súly" },
-        { value: "ONE_REP_MAX", label: "1RM" },
-        { value: "VOLUME", label: "Volumen" },
+        { value: "WEIGHT", label: t("exerciseDetail.metricWeight") },
+        { value: "ONE_REP_MAX", label: t("exerciseDetail.metricOneRepMax") },
+        { value: "VOLUME", label: t("exerciseDetail.metricVolume") },
       ];
   }
 }
@@ -73,13 +78,16 @@ function metricValue(session: ExerciseSessionStat, metric: ChartMetric): number 
   }
 }
 
-const METRIC_UNITS: Record<ChartMetric, string> = {
-  WEIGHT: "kg",
-  ONE_REP_MAX: "kg",
-  VOLUME: "kg",
-  REPS: "ism",
-  DURATION: "p:mp",
-};
+function metricUnit(metric: ChartMetric, t: TFunction): string {
+  switch (metric) {
+    case "REPS":
+      return t("units.reps");
+    case "DURATION":
+      return t("units.minSec");
+    default:
+      return "kg";
+  }
+}
 
 function tickFormatter(metric: ChartMetric): (value: number) => string {
   switch (metric) {
@@ -97,17 +105,19 @@ function tickFormatter(metric: ChartMetric): (value: number) => string {
 const formatKg = (value: number) => `${formatWeight(value)} kg`;
 const formatPlusKg = (value: number) => `+${formatWeight(value)} kg`;
 const formatVolumeKg = (value: number) => `${formatVolume(value)} kg`;
-const formatReps = (value: number) => `${Math.round(value)} ism`;
+const repsFormatter = (t: TFunction) => (value: number) =>
+  `${Math.round(value)} ${t("units.reps")}`;
 
 function valueFormatter(
   metric: ChartMetric,
   type: TrackingType,
+  t: TFunction,
 ): (value: number) => string {
   switch (metric) {
     case "VOLUME":
       return formatVolumeKg;
     case "REPS":
-      return formatReps;
+      return repsFormatter(t);
     case "DURATION":
       return formatSetDuration;
     case "WEIGHT":
@@ -124,22 +134,25 @@ function recordValue(
   return record ? format(record.value) : "–";
 }
 
-function recordRows(stats: ExerciseStats): { label: string; value: string }[] {
+function recordRows(
+  stats: ExerciseStats,
+  t: TFunction,
+): { label: string; value: string }[] {
   const type = stats.trackingType ?? DEFAULT_TRACKING_TYPE;
 
   const volumeRows = [
     {
-      label: "Legjobb szett volumen",
+      label: t("exerciseDetail.bestSetVolume"),
       value: recordValue(stats.bestSetVolume, formatVolumeKg),
     },
     {
-      label: "Legjobb edzés volumen",
+      label: t("exerciseDetail.bestSessionVolume"),
       value: recordValue(stats.bestSessionVolume, formatVolumeKg),
     },
   ];
   const mostRepsRow = {
-    label: "Legtöbb ismétlés",
-    value: recordValue(stats.mostReps, formatReps),
+    label: t("exerciseDetail.mostReps"),
+    value: recordValue(stats.mostReps, repsFormatter(t)),
   };
 
   switch (type) {
@@ -148,7 +161,7 @@ function recordRows(stats: ExerciseStats): { label: string; value: string }[] {
     case "WEIGHTED_BODYWEIGHT":
       return [
         {
-          label: "Legnagyobb plusz súly",
+          label: t("exerciseDetail.heaviestPlus"),
           value: recordValue(stats.heaviestWeight, formatPlusKg),
         },
         mostRepsRow,
@@ -157,18 +170,18 @@ function recordRows(stats: ExerciseStats): { label: string; value: string }[] {
     case "DURATION":
       return [
         {
-          label: "Leghosszabb idő",
+          label: t("exerciseDetail.longest"),
           value: recordValue(stats.longestDuration, formatSetDuration),
         },
       ];
     default:
       return [
         {
-          label: "Legnehezebb súly",
+          label: t("exerciseDetail.heaviest"),
           value: recordValue(stats.heaviestWeight, formatKg),
         },
         {
-          label: "Becsült 1RM",
+          label: t("exerciseDetail.oneRepMax"),
           value: recordValue(stats.bestOneRepMax, formatKg),
         },
         ...volumeRows,
@@ -177,6 +190,7 @@ function recordRows(stats: ExerciseStats): { label: string; value: string }[] {
 }
 
 export default function ExerciseDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
@@ -186,7 +200,7 @@ export default function ExerciseDetailScreen() {
   const [metric, setMetric] = useState<ChartMetric>("WEIGHT");
 
   const trackingType = stats?.trackingType ?? DEFAULT_TRACKING_TYPE;
-  const options = metricOptions(trackingType);
+  const options = metricOptions(trackingType, t);
 
   const chartPoints = useMemo<ProgressPoint[]>(() => {
     if (!stats) return [];
@@ -205,7 +219,7 @@ export default function ExerciseDetailScreen() {
         if (isActive) {
           setStats(data);
           setMetric(
-            metricOptions(data.trackingType ?? DEFAULT_TRACKING_TYPE)[0].value,
+            metricOptions(data.trackingType ?? DEFAULT_TRACKING_TYPE, t)[0].value,
           );
         }
       } catch (error: any) {
@@ -223,7 +237,7 @@ export default function ExerciseDetailScreen() {
     return () => {
       isActive = false;
     };
-  }, [id]);
+  }, [id, t]);
 
   const renderBody = () => {
     if (isLoading) {
@@ -231,27 +245,27 @@ export default function ExerciseDetailScreen() {
     }
     if (loadFailed || !stats) {
       return (
-        <Text style={styles.muted}>Nem sikerült betölteni a gyakorlatot.</Text>
+        <Text style={styles.muted}>{t("exerciseDetail.loadFailed")}</Text>
       );
     }
 
     return (
       <>
         <Text style={styles.muscleGroup}>
-          {MUSCLE_GROUP_LABELS[stats.muscleGroup]}
+          {muscleGroupLabel(stats.muscleGroup, t)}
         </Text>
 
         {stats.history.length === 0 ? (
           <Text style={[styles.muted, styles.centered]}>
-            Még nem csináltad ezt a gyakorlatot.
+            {t("exerciseDetail.neverDone")}
           </Text>
         ) : (
           <>
             <ProgressChart
               points={chartPoints}
-              unit={METRIC_UNITS[metric]}
+              unit={metricUnit(metric, t)}
               formatTick={tickFormatter(metric)}
-              formatValue={valueFormatter(metric, trackingType)}
+              formatValue={valueFormatter(metric, trackingType, t)}
             />
 
             {options.length > 1 && (
@@ -264,8 +278,8 @@ export default function ExerciseDetailScreen() {
               </View>
             )}
 
-            <Text style={styles.sectionTitle}>REKORDOK</Text>
-            <StatRows rows={recordRows(stats)} />
+            <Text style={styles.sectionTitle}>{t("exerciseDetail.records")}</Text>
+            <StatRows rows={recordRows(stats, t)} />
           </>
         )}
       </>

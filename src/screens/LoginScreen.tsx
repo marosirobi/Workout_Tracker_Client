@@ -2,6 +2,7 @@ import { authService } from "@/api/authService";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   StyleSheet,
@@ -12,6 +13,7 @@ import {
 } from "react-native";
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,7 +22,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Hiba", "Kérlek toltsd ki az osszes mezot!");
+      Alert.alert(t("common.error"), t("auth.fillAll"));
       return;
     }
 
@@ -34,7 +36,7 @@ export default function LoginScreen() {
     } catch (error: any) {
       const errorMessage = error.response?.data || error.message || error;
       console.error("HIBA: ", error.response?.data || error.message || error);
-      Alert.alert("Bejelentkezes sikertelen", errorMessage);
+      Alert.alert(t("auth.loginFailed"), String(errorMessage));
     }
   };
 
@@ -44,7 +46,7 @@ export default function LoginScreen() {
 
       <TextInput
         style={styles.input}
-        placeholder="email"
+        placeholder={t("auth.email")}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -52,20 +54,20 @@ export default function LoginScreen() {
       />
       <TextInput
         style={styles.input}
-        placeholder="password"
+        placeholder={t("auth.password")}
         value={password}
         onChangeText={setPassword}
         secureTextEntry={true}
       />
 
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login</Text>
+        <Text style={styles.buttonText}>{t("auth.login")}</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.button}
         onPress={() => router.replace("/register")}
       >
-        <Text style={styles.buttonText}>Go to register</Text>
+        <Text style={styles.buttonText}>{t("auth.goToRegister")}</Text>
       </TouchableOpacity>
     </View>
   );

@@ -1,6 +1,8 @@
 import { TemplateResponse } from "@/api/templateService";
-import { MUSCLE_GROUP_LABELS, MuscleGroup } from "@/utils/muscleGroups";
+import { muscleGroupLabel, MuscleGroup } from "@/utils/muscleGroups";
 import { Ionicons } from "@expo/vector-icons";
+import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -17,14 +19,14 @@ interface TemplateCardProps {
   onEdit: () => void;
 }
 
-function describeTemplate(template: TemplateResponse): string {
+function describeTemplate(template: TemplateResponse, t: TFunction): string {
   const groups = new Set<MuscleGroup>();
   for (const ex of template.exercises) {
     if (ex.muscleGroup) groups.add(ex.muscleGroup);
   }
 
-  const text = `${template.exercises.length} gyakorlat`;
-  const groupText = [...groups].map((g) => MUSCLE_GROUP_LABELS[g]).join(", ");
+  const text = t("units.exercises", { count: template.exercises.length });
+  const groupText = [...groups].map((g) => muscleGroupLabel(g, t)).join(", ");
 
   return groupText ? `${text} · ${groupText}` : text;
 }
@@ -36,6 +38,8 @@ export function TemplateCard({
   disabled,
   onEdit,
 }: TemplateCardProps) {
+  const { t } = useTranslation();
+
   return (
     <TouchableOpacity
       style={[styles.card, disabled && !isStarting && styles.dimmed]}
@@ -47,7 +51,7 @@ export function TemplateCard({
           {template.templateName}
         </Text>
         <Text style={styles.description} numberOfLines={1}>
-          {describeTemplate(template)}
+          {describeTemplate(template, t)}
         </Text>
       </View>
 
@@ -63,7 +67,7 @@ export function TemplateCard({
       {isStarting ? (
         <ActivityIndicator color="#FC4C02" />
       ) : (
-        <Text style={styles.action}>Indítás</Text>
+        <Text style={styles.action}>{t("workoutTab.start")}</Text>
       )}
     </TouchableOpacity>
   );

@@ -3,6 +3,7 @@ import {
   type WorkoutDetailResponse,
 } from "@/api/workoutService";
 import { BestEfforts } from "@/components/summary/BestEfforts";
+import { useLocale } from "@/i18n/useLocale";
 import { KeyStats } from "@/components/summary/KeyStats";
 import { MuscleGroupList } from "@/components/summary/MuscleGroupList";
 import { PaceChart } from "@/components/summary/PaceChart";
@@ -39,8 +40,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-function formatWorkoutDate(iso: string): string {
-  return new Date(iso).toLocaleString("hu-HU", {
+function formatWorkoutDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleString(locale, {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -50,6 +51,7 @@ function formatWorkoutDate(iso: string): string {
 }
 
 export default function WorkoutDetailsScreen() {
+  const { t, locale } = useLocale();
   const { id, fresh } = useLocalSearchParams<{ id: string; fresh?: string }>();
   const isFresh = fresh === "1";
   const router = useRouter();
@@ -87,7 +89,7 @@ export default function WorkoutDetailsScreen() {
         } catch (error) {
           console.error("Hiba a részletek letöltésekor", error);
           if (isActive) {
-            Alert.alert("Hiba", "Nem sikerült betölteni az edzést.");
+            Alert.alert(t("common.error"), t("workoutDetail.loadFailed"));
             close();
           }
         } finally {
@@ -99,7 +101,7 @@ export default function WorkoutDetailsScreen() {
       return () => {
         isActive = false;
       };
-    }, [id, close]),
+    }, [id, close, t]),
   );
 
   const summary = useMemo(
@@ -138,17 +140,17 @@ export default function WorkoutDetailsScreen() {
   );
 
   const handleDelete = () => {
-    Alert.alert("Törlés", "Biztosan törölni szeretnéd ezt az edzést?", [
-      { text: "Mégsem", style: "cancel" },
+    Alert.alert(t("common.delete"), t("workoutDetail.deleteConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Törlés",
+        text: t("common.delete"),
         style: "destructive",
         onPress: async () => {
           try {
             await workoutService.deleteWorkout(Number(id));
             router.replace("/");
           } catch {
-            Alert.alert("Hiba", "Nem sikerült törölni az edzést.");
+            Alert.alert(t("common.error"), t("workoutDetail.deleteFailed"));
           }
         },
       },
@@ -165,19 +167,21 @@ export default function WorkoutDetailsScreen() {
 
   if (!workout) return null;
 
-  const typeLabel = workout.type === "CARDIO" ? "Kardió" : "Erőedzés";
+  const typeLabel = t(`workoutType.${workout.type}`);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={close} hitSlop={12}>
-          <Text style={styles.topBarAction}>{isFresh ? "Kész" : "Vissza"}</Text>
+          <Text style={styles.topBarAction}>
+            {isFresh ? t("common.done") : t("common.back")}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => router.push(`/workouts/${workout.id}/edit`)}
           hitSlop={12}
         >
-          <Text style={styles.topBarAction}>Szerkesztés</Text>
+          <Text style={styles.topBarAction}>{t("common.edit")}</Text>
         </TouchableOpacity>
       </View>
 
@@ -186,11 +190,13 @@ export default function WorkoutDetailsScreen() {
           <RouteMap points={workout.trackPoints ?? []} />
         )}
         <View style={styles.body}>
-          {isFresh && <Text style={styles.congrats}>Szép munka!</Text>}
+          {isFresh && (
+            <Text style={styles.congrats}>{t("workoutDetail.congrats")}</Text>
+          )}
 
           <Text style={styles.title}>{workout.workoutTitle || typeLabel}</Text>
           <Text style={styles.meta}>
-            {formatWorkoutDate(workout.startTime)} · {typeLabel}
+            {formatWorkoutDate(workout.startTime, locale)} · {typeLabel}
           </Text>
           {workout.workoutNote ? (
             <Text style={styles.note}>{workout.workoutNote}</Text>
@@ -201,17 +207,17 @@ export default function WorkoutDetailsScreen() {
               <KeyStats
                 items={[
                   {
-                    label: "Táv",
+                    label: t("stats.distance"),
                     value: summary.distanceKm.toFixed(2),
                     unit: "km",
                   },
                   {
-                    label: "Átl. tempó",
+                    label: t("stats.avgPace"),
                     value: formatPace(summary.avgPaceMinPerKm),
                     unit: "/km",
                   },
                   {
-                    label: "Mozgásidő",
+                    label: t("stats.movingTime"),
                     value: formatDuration(summary.movingSeconds),
                   },
                 ]}
@@ -219,19 +225,19 @@ export default function WorkoutDetailsScreen() {
               <StatRows
                 rows={[
                   {
-                    label: "Teljes idő",
+                    label: t("stats.elapsedTime"),
                     value: formatDuration(summary.elapsedSeconds),
                   },
                   {
-                    label: "Átl. sebesség",
+                    label: t("stats.avgSpeed"),
                     value: `${summary.avgSpeedKmh.toFixed(1)} km/h`,
                   },
                   {
-                    label: "Max. sebesség",
+                    label: t("stats.maxSpeed"),
                     value: `${summary.maxSpeedKmh.toFixed(1)} km/h`,
                   },
                   {
-                    label: "Szintemelkedés",
+                    label: t("stats.elevationGain"),
                     value: `${Math.round(summary.elevationGain)} m`,
                   },
                 ]}
@@ -250,16 +256,16 @@ export default function WorkoutDetailsScreen() {
               <KeyStats
                 items={[
                   {
-                    label: "Időtartam",
+                    label: t("stats.duration"),
                     value: formatDuration(strengthSummary.durationSeconds),
                   },
                   {
-                    label: "Volumen",
+                    label: t("stats.volume"),
                     value: formatVolume(strengthSummary.totalVolumeKg),
                     unit: "kg",
                   },
                   {
-                    label: "Szettek",
+                    label: t("stats.sets"),
                     value: `${strengthSummary.totalSets}`,
                   },
                 ]}
@@ -267,17 +273,17 @@ export default function WorkoutDetailsScreen() {
               <StatRows
                 rows={[
                   {
-                    label: "Ismétlések",
+                    label: t("stats.reps"),
                     value: `${strengthSummary.totalReps}`,
                   },
                   {
-                    label: "Gyakorlatok",
+                    label: t("stats.exercises"),
                     value: `${strengthSummary.exerciseCount}`,
                   },
                   ...(strengthSummary.heaviestWeightKg !== null
                     ? [
                         {
-                          label: "Legnehezebb súly",
+                          label: t("stats.heaviestWeight"),
                           value: `${formatWeight(strengthSummary.heaviestWeightKg)} kg`,
                         },
                       ]
@@ -286,7 +292,9 @@ export default function WorkoutDetailsScreen() {
               />
               <MuscleGroupList items={muscleGroupSets} />
 
-              <Text style={styles.sectionTitle}>GYAKORLATOK</Text>
+              <Text style={styles.sectionTitle}>
+                {t("workoutDetail.exercises")}
+              </Text>
               {(workout?.exercises ?? []).map((exercise) => (
                 <StrengthExerciseCard
                   key={exercise.id}
@@ -308,12 +316,14 @@ export default function WorkoutDetailsScreen() {
                   })
                 }
               >
-                <Text style={styles.templateButtonText}>Mentés sablonként</Text>
+                <Text style={styles.templateButtonText}>
+                  {t("workoutDetail.saveAsTemplate")}
+                </Text>
               </TouchableOpacity>
             )}
 
           <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-            <Text style={styles.deleteText}>Edzés törlése</Text>
+            <Text style={styles.deleteText}>{t("workoutDetail.delete")}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

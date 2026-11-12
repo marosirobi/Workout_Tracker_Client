@@ -11,6 +11,7 @@ import {
   type SetField,
 } from "@/components/workout/EditableExerciseCard";
 import { ExercisePicker } from "@/components/workout/ExercisePicker";
+import i18n from "@/i18n";
 import type { WorkoutType } from "@/store/workoutStore";
 import { formatDurationInput, parseDurationInput } from "@/utils/durationInput";
 import { formatDecimalInput, parseDecimalInput } from "@/utils/numberInput";
@@ -19,10 +20,11 @@ import {
   usesReps,
   usesWeight,
 } from "@/utils/trackingTypes";
-import { DEFAULT_TITLES } from "@/utils/workoutDefaults";
+import { defaultWorkoutTitle } from "@/utils/workoutDefaults";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useNavigation, usePreventRemove } from "expo-router/react-navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -75,7 +77,7 @@ function toDraft(workout: WorkoutDetailResponse): Draft {
 
 function validateExercises(exercises: DraftWorkoutExercise[]): string | null {
   if (exercises.length === 0) {
-    return "Adj hozzá legalább egy gyakorlatot.";
+    return i18n.t("workoutEditor.noExercises");
   }
 
   for (const exercise of exercises) {
@@ -83,26 +85,29 @@ function validateExercises(exercises: DraftWorkoutExercise[]): string | null {
 
     for (let i = 0; i < exercise.sets.length; i++) {
       const set = exercise.sets[i];
-      const where = `${exercise.exerciseName}, ${i + 1}. szett`;
+      const where = i18n.t("workoutEditor.setRef", {
+        name: exercise.exerciseName,
+        set: i + 1,
+      });
 
       if (usesWeight(type)) {
         const weight = parseDecimalInput(set.weight);
         if (weight === null || weight > MAX_VALUE) {
-          return `${where}: érvénytelen súly.`;
+          return i18n.t("workoutEditor.invalidWeight", { where });
         }
       }
 
       if (usesReps(type)) {
         const reps = Number(set.reps);
         if (set.reps === "" || reps < 1 || reps > MAX_VALUE) {
-          return `${where}: adj meg legalább 1 ismétlést.`;
+          return i18n.t("workoutEditor.invalidReps", { where });
         }
       }
 
       if (type === "DURATION") {
         const seconds = parseDurationInput(set.duration);
         if (seconds === null || seconds < 1 || seconds > MAX_DURATION_SECONDS) {
-          return `${where}: adj meg érvényes időt (például 1:30).`;
+          return i18n.t("workoutEditor.invalidTime", { where });
         }
       }
     }
@@ -133,6 +138,7 @@ function toRequestExercises(
 }
 
 export default function WorkoutEditorScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const workoutId = Number(id);
   const router = useRouter();
@@ -167,7 +173,7 @@ export default function WorkoutEditorScreen() {
           error.response?.data || error.message,
         );
         if (isActive) {
-          Alert.alert("Hiba", "Nem sikerült betölteni az edzést.");
+          Alert.alert(t("common.error"), t("workoutEditor.loadFailed"));
           setIsDone(true);
         }
       } finally {
@@ -179,7 +185,7 @@ export default function WorkoutEditorScreen() {
     return () => {
       isActive = false;
     };
-  }, [workoutId]);
+  }, [workoutId, t]);
 
   useEffect(() => {
     if (!isStrength) return;
@@ -202,12 +208,12 @@ export default function WorkoutEditorScreen() {
 
   usePreventRemove(isDirty && !isDone, ({ data }) => {
     Alert.alert(
-      "Elveted a módosításokat?",
-      "A nem mentett változások elvesznek.",
+      t("common.discardChangesTitle"),
+      t("common.discardChangesMessage"),
       [
-        { text: "Maradok", style: "cancel" },
+        { text: t("common.stay"), style: "cancel" },
         {
-          text: "Elvetés",
+          text: t("common.discard"),
           style: "destructive",
           onPress: () => navigation.dispatch(data.action),
         },
@@ -215,7 +221,7 @@ export default function WorkoutEditorScreen() {
     );
   });
 
-  const defaultTitle = workoutType ? DEFAULT_TITLES[workoutType] : "";
+  const defaultTitle = workoutType ? defaultWorkoutTitle(workoutType, t) : "";
 
   const updateExercise = (
     exerciseIndex: number,
@@ -307,7 +313,7 @@ export default function WorkoutEditorScreen() {
     if (exercisesChanged) {
       const error = validateExercises(draft.exercises);
       if (error) {
-        Alert.alert("Hibás adat", error);
+        Alert.alert(t("common.invalidData"), error);
         return;
       }
     }
@@ -329,10 +335,7 @@ export default function WorkoutEditorScreen() {
         "Hiba az edzés mentésekor",
         error.response?.data || error.message,
       );
-      Alert.alert(
-        "Sikertelen mentés",
-        "Nem sikerült elmenteni a változásokat.",
-      );
+      Alert.alert(t("common.saveFailed"), t("workoutEditor.saveFailed"));
     } finally {
       setIsSaving(false);
     }
@@ -349,7 +352,7 @@ export default function WorkoutEditorScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <EditorHeader
-        title="Edzés szerkesztése"
+        title={t("workoutEditor.title")}
         onCancel={() => router.back()}
         onSave={handleSave}
         isSaving={isSaving}
@@ -363,7 +366,7 @@ export default function WorkoutEditorScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.label}>CÍM</Text>
+          <Text style={styles.label}>{t("workoutEditor.titleLabel")}</Text>
           <TextInput
             style={styles.input}
             value={draft.title}
@@ -376,14 +379,14 @@ export default function WorkoutEditorScreen() {
             editable={!isSaving}
           />
 
-          <Text style={styles.label}>MEGJEGYZÉS</Text>
+          <Text style={styles.label}>{t("workoutEditor.noteLabel")}</Text>
           <TextInput
             style={[styles.input, styles.noteInput]}
             value={draft.note}
             onChangeText={(note) =>
               setDraft((current) => ({ ...current, note }))
             }
-            placeholder="Hogy ment az edzés?"
+            placeholder={t("saveWorkout.notePlaceholder")}
             placeholderTextColor="#5A5A5E"
             multiline
             maxLength={MAX_NOTE_LENGTH}
@@ -396,7 +399,9 @@ export default function WorkoutEditorScreen() {
 
           {isStrength && (
             <>
-              <Text style={styles.label}>GYAKORLATOK</Text>
+              <Text style={styles.label}>
+                {t("workoutEditor.exercisesLabel")}
+              </Text>
               {draft.exercises.map((exercise, exerciseIndex) => (
                 <EditableExerciseCard
                   key={exercise.key}
@@ -416,7 +421,9 @@ export default function WorkoutEditorScreen() {
                 onPress={() => setPickerVisible(true)}
                 disabled={isSaving}
               >
-                <Text style={styles.addButtonText}>+ Gyakorlat hozzáadása</Text>
+                <Text style={styles.addButtonText}>
+                  {t("workoutEditor.addExercise")}
+                </Text>
               </TouchableOpacity>
             </>
           )}

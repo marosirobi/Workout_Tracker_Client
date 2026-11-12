@@ -3,10 +3,12 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { ExerciseBrowser } from "@/components/workout/ExerciseBrowser";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ExerciseLibraryScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -44,7 +46,7 @@ export default function ExerciseLibraryScreen() {
     if (loadFailed) {
       return (
         <Text style={styles.muted}>
-          Nem sikerült betölteni a gyakorlatokat.
+          {t("exercises.loadFailed")}
         </Text>
       );
     }
@@ -59,7 +61,7 @@ export default function ExerciseLibraryScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <ScreenHeader title="Gyakorlatok" onBack={() => router.back()} />
+      <ScreenHeader title={t("exercises.title")} onBack={() => router.back()} />
       {renderBody()}
     </SafeAreaView>
   );

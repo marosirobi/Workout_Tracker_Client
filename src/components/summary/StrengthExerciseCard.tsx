@@ -14,6 +14,8 @@ import {
   formatVolume,
   formatWeight,
 } from "@/utils/workoutFormat";
+import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 
 interface Column {
@@ -22,29 +24,29 @@ interface Column {
   render: (set: ExerciseSetDetail) => string;
 }
 
-const repsColumn = (width: number): Column => ({
-  label: "ISM.",
+const repsColumn = (width: number, t: TFunction): Column => ({
+  label: t("setColumns.reps"),
   width,
   render: (set) => `${set.reps}`,
 });
 
-function columnsFor(type: TrackingType): Column[] {
+function columnsFor(type: TrackingType, t: TFunction): Column[] {
   switch (type) {
     case "BODYWEIGHT":
-      return [repsColumn(90)];
+      return [repsColumn(90, t)];
     case "WEIGHTED_BODYWEIGHT":
       return [
         {
-          label: "PLUSZ SÚLY",
+          label: t("setColumns.plusWeight"),
           width: 90,
           render: (set) => `+${formatWeight(set.weight)} kg`,
         },
-        repsColumn(50),
+        repsColumn(50, t),
       ];
     case "DURATION":
       return [
         {
-          label: "IDŐ",
+          label: t("setColumns.time"),
           width: 90,
           render: (set) => formatSetDuration(set.durationSeconds ?? 0),
         },
@@ -52,11 +54,11 @@ function columnsFor(type: TrackingType): Column[] {
     default:
       return [
         {
-          label: "SÚLY",
+          label: t("setColumns.weight"),
           width: 90,
           render: (set) => `${formatWeight(set.weight)} kg`,
         },
-        repsColumn(50),
+        repsColumn(50, t),
       ];
   }
 }
@@ -68,9 +70,10 @@ export function StrengthExerciseCard({
   exercise: WorkoutExerciseDetail;
   bodyWeightKg: number | null;
 }) {
+  const { t } = useTranslation();
   const type = exerciseTrackingType(exercise);
   const sets = exercise.sets;
-  const columns = columnsFor(type);
+  const columns = columnsFor(type, t);
   const bestSet = findBestSet(type, sets);
 
   const headerValue =
@@ -80,9 +83,10 @@ export function StrengthExerciseCard({
         )
       : `${formatVolume(exerciseVolume(exercise, bodyWeightKg))} kg`;
 
-  const recordLabel = rankLabel(exercise.weightRank);
+  const recordLabel = rankLabel(exercise.weightRank, t);
   const isRecord = exercise.weightRank === 1;
-  const bestLabel = recordLabel ?? (sets.length > 1 ? "Legjobb" : null);
+  const bestLabel =
+    recordLabel ?? (sets.length > 1 ? t("rank.best") : null);
 
   return (
     <View style={styles.card}>
@@ -92,7 +96,9 @@ export function StrengthExerciseCard({
       </View>
 
       <View style={styles.row}>
-        <Text style={[styles.headerText, styles.setColumn]}>SZETT</Text>
+        <Text style={[styles.headerText, styles.setColumn]}>
+          {t("setColumns.set")}
+        </Text>
         {columns.map((column) => (
           <Text
             key={column.label}

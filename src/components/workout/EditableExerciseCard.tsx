@@ -7,6 +7,8 @@ import {
   type TrackingType,
 } from "@/utils/trackingTypes";
 import { Ionicons } from "@expo/vector-icons";
+import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 import {
     StyleSheet,
     Text,
@@ -33,8 +35,10 @@ export interface DraftWorkoutExercise {
 
 export type SetField = "weight" | "reps" | "duration";
 
-const weightHeader = (type: TrackingType) =>
-  type === "WEIGHTED_BODYWEIGHT" ? "PLUSZ SÚLY (KG)" : "SÚLY (KG)";
+const weightHeader = (type: TrackingType, t: TFunction) =>
+  type === "WEIGHTED_BODYWEIGHT"
+    ? t("setColumns.plusWeightKg")
+    : t("setColumns.weightKg");
 
 interface EditableExerciseCardProps {
   exercise: DraftWorkoutExercise;
@@ -53,6 +57,7 @@ export function EditableExerciseCard({
   onRemoveSet,
   onRemove,
 }: EditableExerciseCardProps) {
+  const { t } = useTranslation();
   const canRemoveSet = exercise.sets.length > 1;
   const type = exercise.trackingType;
   const isDuration = type === "DURATION";
@@ -69,18 +74,22 @@ export function EditableExerciseCard({
       </View>
 
       <View style={styles.row}>
-        <Text style={[styles.headerText, styles.setColumn]}>SZETT</Text>
+        <Text style={[styles.headerText, styles.setColumn]}>
+          {t("setColumns.set")}
+        </Text>
         {usesWeight(type) && (
           <Text style={[styles.headerText, styles.inputColumn]}>
-            {weightHeader(type)}
+            {weightHeader(type, t)}
           </Text>
         )}
         {usesReps(type) && (
-          <Text style={[styles.headerText, styles.inputColumn]}>ISM.</Text>
+          <Text style={[styles.headerText, styles.inputColumn]}>
+            {t("setColumns.reps")}
+          </Text>
         )}
         {isDuration && (
           <Text style={[styles.headerText, styles.inputColumn]}>
-            IDŐ (P:MP)
+            {t("setColumns.timeMinSec")}
           </Text>
         )}
         <View style={styles.deleteColumn} />
@@ -155,7 +164,7 @@ export function EditableExerciseCard({
         onPress={onAddSet}
         disabled={disabled}
       >
-        <Text style={styles.addSetText}>+ Szett</Text>
+        <Text style={styles.addSetText}>{t("setColumns.addSet")}</Text>
       </TouchableOpacity>
     </View>
   );

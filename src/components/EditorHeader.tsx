@@ -5,6 +5,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 
 interface EditorHeaderProps {
   title: string;
@@ -19,6 +20,8 @@ export function EditorHeader({
   onSave,
   isSaving,
 }: EditorHeaderProps) {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.header}>
       <TouchableOpacity
@@ -27,7 +30,7 @@ export function EditorHeader({
         disabled={isSaving}
         hitSlop={12}
       >
-        <Text style={styles.action}>Mégse</Text>
+        <Text style={styles.action}>{t("common.cancel")}</Text>
       </TouchableOpacity>
 
       <Text style={styles.title} numberOfLines={1}>
@@ -43,7 +46,7 @@ export function EditorHeader({
         {isSaving ? (
           <ActivityIndicator color="#FC4C02" />
         ) : (
-          <Text style={[styles.action, styles.save]}>Mentés</Text>
+          <Text style={[styles.action, styles.save]}>{t("common.save")}</Text>
         )}
       </TouchableOpacity>
     </View>

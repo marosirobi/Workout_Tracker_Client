@@ -7,9 +7,10 @@ import {
   formatMonthTitle,
   getMonthRange,
   monthKey,
-  WEEKDAY_LABELS,
+  weekdayLabels,
   type CalendarMonth,
 } from "@/utils/calendar";
+import { useLocale } from "@/i18n/useLocale";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
@@ -32,12 +33,14 @@ interface MonthGridProps {
   month: CalendarMonth;
   counts: Record<number, number> | undefined;
   width: number;
+  weekdays: string[];
 }
 
 const MonthGrid = memo(function MonthGrid({
   month,
   counts,
   width,
+  weekdays,
 }: MonthGridProps) {
   const cells = buildMonthCells(month);
   const cellSize = (width - GAP * 6) / 7;
@@ -52,7 +55,7 @@ const MonthGrid = memo(function MonthGrid({
   return (
     <View style={{ width }}>
       <View style={styles.weekdays}>
-        {WEEKDAY_LABELS.map((label, index) => (
+        {weekdays.map((label, index) => (
           <Text key={index} style={[styles.weekday, { width: cellSize }]}>
             {label}
           </Text>
@@ -103,6 +106,8 @@ const MonthGrid = memo(function MonthGrid({
 });
 
 export function ActivityCalendar({ refreshSignal }: { refreshSignal: number }) {
+  const { locale } = useLocale();
+  const weekdays = useMemo(() => weekdayLabels(locale), [locale]);
   const months = useMemo(() => buildMonthList(MONTH_COUNT), []);
   const [width, setWidth] = useState(0);
   const [visibleIndex, setVisibleIndex] = useState(MONTH_COUNT - 1);
@@ -166,7 +171,7 @@ export function ActivityCalendar({ refreshSignal }: { refreshSignal: number }) {
           disabled={visibleIndex === 0}
         />
         <Text style={styles.title}>
-          {formatMonthTitle(months[visibleIndex])}
+          {formatMonthTitle(months[visibleIndex], locale)}
         </Text>
         <IconButton
           name="chevron-forward"
@@ -190,7 +195,7 @@ export function ActivityCalendar({ refreshSignal }: { refreshSignal: number }) {
               offset: width * index,
               index,
             })}
-            extraData={countsByMonth}
+            extraData={[countsByMonth, locale]}
             onViewableItemsChanged={onViewableItemsChanged}
             viewabilityConfig={viewabilityConfig}
             renderItem={({ item }) => (
@@ -198,6 +203,7 @@ export function ActivityCalendar({ refreshSignal }: { refreshSignal: number }) {
                 month={item}
                 counts={countsByMonth[monthKey(item)]}
                 width={width}
+                weekdays={weekdays}
               />
             )}
           />

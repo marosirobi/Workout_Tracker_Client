@@ -1,3 +1,4 @@
+import { currentLocale } from "@/i18n";
 import type { WorkoutExercise } from "@/store/workoutStore";
 import { setVolume } from "@/utils/strengthAnalysis";
 import { DEFAULT_TRACKING_TYPE } from "@/utils/trackingTypes";
@@ -40,7 +41,7 @@ export const getLiveSpeedMs = (
     : 0;
 
 export const formatClock = (isoDate: string): string =>
-  new Date(isoDate).toLocaleTimeString("hu-HU", {
+  new Date(isoDate).toLocaleTimeString(currentLocale(), {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -90,7 +91,7 @@ export const getCurrentExerciseInfo = (
 export const formatWeight = (kg: number): string =>
   `${Math.round(kg * 10) / 10}`;
 export const formatVolume = (kg: number): string =>
-  Math.round(kg).toLocaleString("hu-HU");
+  Math.round(kg).toLocaleString(currentLocale());
 
 export const formatSetDuration = (totalSeconds: number): string => {
   const rounded = Math.round(totalSeconds);

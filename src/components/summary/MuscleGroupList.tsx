@@ -1,22 +1,24 @@
-import { MUSCLE_GROUP_LABELS } from "@/utils/muscleGroups";
+import { muscleGroupLabel } from "@/utils/muscleGroups";
 import { MuscleGroupSets } from "@/utils/strengthAnalysis";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 
 export function MuscleGroupList({ items }: { items: MuscleGroupSets[] }) {
+  const { t } = useTranslation();
   if (items.length === 0) return null;
 
   const maxSets = items[0].sets;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>IZOMCSOPORTOK</Text>
+      <Text style={styles.title}>{t("workoutDetail.muscleGroups")}</Text>
       {items.map((item, index) => {
         const ratio = item.sets / maxSets;
         const isTop = index === 0;
 
         return (
           <View key={item.group} style={styles.row}>
-            <Text style={styles.label}>{MUSCLE_GROUP_LABELS[item.group]}</Text>
+            <Text style={styles.label}>{muscleGroupLabel(item.group, t)}</Text>
             <View style={styles.barTrack}>
               <View
                 style={[
@@ -26,7 +28,9 @@ export function MuscleGroupList({ items }: { items: MuscleGroupSets[] }) {
                 ]}
               />
             </View>
-            <Text style={styles.value}>{item.sets} szett</Text>
+            <Text style={styles.value}>
+              {t("units.sets", { count: item.sets })}
+            </Text>
           </View>
         );
       })}

@@ -23,6 +23,7 @@ import {
 } from "@/utils/workoutFormat";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   BackHandler,
@@ -34,7 +35,10 @@ import {
   View,
 } from "react-native";
 
+type GpsStatus = "Searching" | "Denied" | "Foreground" | "Active";
+
 export default function ActiveWorkoutScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const {
     activeWorkoutType,
@@ -66,7 +70,7 @@ export default function ActiveWorkoutScreen() {
   );
   const isPaused = pausedAt !== null;
 
-  const [gpsStatus, setGpsStatus] = useState("GPS keres...");
+  const [gpsStatus, setGpsStatus] = useState<GpsStatus>("Searching");
 
   const [isModalVisible, setModalVisible] = useState(false);
   const [availableExercises, setAvailableExercises] = useState<Exercise[]>([]);
@@ -96,23 +100,19 @@ export default function ActiveWorkoutScreen() {
 
       const mode = await startLocationTracking();
       if (mode === "denied") {
-        setGpsStatus("GPS denied");
+        setGpsStatus("Denied");
         Alert.alert(
-          "Helymeghatározás szükséges",
-          "Engedélyezd a GPS-t a kardió edzés méréséhez!",
+          t("active.locationRequiredTitle"),
+          t("active.locationRequiredMessage"),
         );
       } else if (mode === "foreground") {
-        setGpsStatus("GPS active(foreground)");
-        Alert.alert(
-          "Lezárt képernyőnél nem mér",
-          'Ha azt szeretnéd, hogy az edzés akkor is mérjen, amikor a telefon le van zárva, a beállításokban válaszd a "Mindig engedélyezve" lehetőséget a helyadatoknál.',
-          [
-            { text: "Most nem", style: "cancel" },
-            { text: "Beállítások", onPress: () => Linking.openSettings() },
-          ],
-        );
+        setGpsStatus("Foreground");
+        Alert.alert(t("active.lockedTitle"), t("active.lockedMessage"), [
+          { text: t("active.notNow"), style: "cancel" },
+          { text: t("active.settings"), onPress: () => Linking.openSettings() },
+        ]);
       } else {
-        setGpsStatus("GPS active");
+        setGpsStatus("Active");
       }
 
       await prepareLiveDisplay();
@@ -122,18 +122,18 @@ export default function ActiveWorkoutScreen() {
 
   useEffect(() => {
     const onBackPress = () => {
-      Alert.alert("Edzes folyamatban", "Biztosan megszakitod az edzest?", [
-        { text: "Megsem", style: "cancel" },
+      Alert.alert(t("active.quitTitle"), t("active.quitMessage"), [
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Megszakitas",
+          text: t("active.quit"),
           style: "destructive",
           onPress: async () => {
             try {
               await discardActiveWorkout();
             } catch {
               Alert.alert(
-                "Sikertelen elvetés",
-                "Nem sikerült törölni az edzést a szerverről. Ellenőrizd az internetkapcsolatot!",
+                t("active.discardFailedTitle"),
+                t("active.discardFailedMessage"),
               );
             }
           },
@@ -146,7 +146,7 @@ export default function ActiveWorkoutScreen() {
       onBackPress,
     );
     return () => backHandler.remove();
-  }, [router, clearActiveWorkout]);
+  }, [router, clearActiveWorkout, t]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -201,7 +201,7 @@ export default function ActiveWorkoutScreen() {
         </View>
 
         <View style={styles.setHeader}>
-          {setHeaderLabels(trackingType).map((label) => (
+          {setHeaderLabels(trackingType, t).map((label) => (
             <Text key={label} style={styles.setHeaderText}>
               {label}
             </Text>
@@ -225,7 +225,7 @@ export default function ActiveWorkoutScreen() {
           style={styles.addSetButton}
           onPress={() => addSet(item.exerciseId)}
         >
-          <Text style={styles.addSetButtonText}>+ Új szett</Text>
+          <Text style={styles.addSetButtonText}>{t("active.addSet")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -233,7 +233,7 @@ export default function ActiveWorkoutScreen() {
 
   return (
     <View style={styles.container}>
-      {isPaused && <Text style={styles.pausedLabel}>PAUSED</Text>}
+      {isPaused && <Text style={styles.pausedLabel}>{t("active.paused")}</Text>}
       <Text style={[styles.timerText, isPaused && styles.timerTextPaused]}>
         {formatDuration(elapsedSeconds)}
       </Text>
@@ -250,7 +250,9 @@ export default function ActiveWorkoutScreen() {
             style={styles.addExerciseButton}
             onPress={() => setModalVisible(true)}
           >
-            <Text style={styles.addExerciseButtonText}>+ Új Gyakorlat</Text>
+            <Text style={styles.addExerciseButtonText}>
+              {t("active.addExercise")}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -259,21 +261,24 @@ export default function ActiveWorkoutScreen() {
         <View style={styles.cardioDashboard}>
           <View style={styles.gpsBadge}>
             <Text style={styles.gpsBadgeText}>
-              GPS: {gpsStatus} ({trackPoints.length} pont)
+              {t("active.gpsBadge", {
+                status: t(`active.gps${gpsStatus}`),
+                points: t("units.points", { count: trackPoints.length }),
+              })}
             </Text>
           </View>
 
           <View style={styles.heroDistanceBox}>
-            <Text style={styles.heroDistanceLabel}>TÁVOLSÁG</Text>
+            <Text style={styles.heroDistanceLabel}>{t("active.distance")}</Text>
             <Text style={styles.heroDistanceValue}>
               {totalDistanceKm.toFixed(2)}
             </Text>
-            <Text style={styles.heroDistanceUnit}>kilométer</Text>
+            <Text style={styles.heroDistanceUnit}>{t("units.kilometers")}</Text>
           </View>
 
           <View style={styles.metricsGrid}>
             <View style={styles.metricBox}>
-              <Text style={styles.metricLabel}>ÁTLAGTEMPÓ</Text>
+              <Text style={styles.metricLabel}>{t("active.avgPace")}</Text>
               <Text style={styles.metricValue}>
                 {formatPace(avgPaceMinutes)}
               </Text>
@@ -281,7 +286,7 @@ export default function ActiveWorkoutScreen() {
             </View>
 
             <View style={styles.metricBox}>
-              <Text style={styles.metricLabel}>AKT. TEMPÓ</Text>
+              <Text style={styles.metricLabel}>{t("active.currentPace")}</Text>
               <Text style={styles.metricValue}>
                 {formatPace(currentPaceMinutes)}
               </Text>
@@ -289,15 +294,15 @@ export default function ActiveWorkoutScreen() {
             </View>
 
             <View style={styles.metricBox}>
-              <Text style={styles.metricLabel}>SZINTEMELKEDÉS</Text>
+              <Text style={styles.metricLabel}>{t("active.elevation")}</Text>
               <Text style={styles.metricValue}>
                 {Math.round(elevationGain)}
               </Text>
-              <Text style={styles.metricUnit}>méter</Text>
+              <Text style={styles.metricUnit}>{t("units.meters")}</Text>
             </View>
 
             <View style={styles.metricBox}>
-              <Text style={styles.metricLabel}>SEBESSÉG</Text>
+              <Text style={styles.metricLabel}>{t("active.speed")}</Text>
               <Text style={styles.metricValue}>
                 {(liveSpeedMs * 3.6).toFixed(1)}
               </Text>
@@ -314,13 +319,17 @@ export default function ActiveWorkoutScreen() {
               style={[styles.controlButton, styles.primaryButton]}
               onPress={resumeWorkout}
             >
-              <Text style={styles.controlButtonText}>▶ Folytatás</Text>
+              <Text style={styles.controlButtonText}>
+                ▶ {t("active.resume")}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.controlButton, styles.secondaryButton]}
               onPress={beginFinish}
             >
-              <Text style={styles.controlButtonText}>■ Befejezés</Text>
+              <Text style={styles.controlButtonText}>
+                ■ {t("active.finish")}
+              </Text>
             </TouchableOpacity>
           </>
         ) : (
@@ -328,7 +337,9 @@ export default function ActiveWorkoutScreen() {
             style={[styles.controlButton, styles.primaryButton]}
             onPress={pauseWorkout}
           >
-            <Text style={styles.controlButtonText}>❚❚ Szünet</Text>
+            <Text style={styles.controlButtonText}>
+              ❚❚ {t("active.pause")}
+            </Text>
           </TouchableOpacity>
         )}
       </View>

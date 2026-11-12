@@ -1,6 +1,7 @@
 import { authService } from "@/api/authService";
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   StyleSheet,
@@ -11,6 +12,7 @@ import {
 } from "react-native";
 
 export default function RegisterScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -19,38 +21,38 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!username || !password || !email) {
-      Alert.alert("Hiba", "Kérlek töltsd ki az összes mezőt!");
+      Alert.alert(t("common.error"), t("auth.fillAll"));
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert("Hiba", "Két jelszó nem egyezik!");
+      Alert.alert(t("common.error"), t("auth.passwordMismatch"));
       return;
     }
 
     try {
       await authService.register(username, email, password);
-      Alert.alert("Siker", "Sikeres regisztráció");
+      Alert.alert(t("auth.registerSuccessTitle"), t("auth.registerSuccess"));
     } catch (error: any) {
       const errorMessage =
-        error.response?.data?.message || "Hiba történt a regisztráció során.";
-      Alert.alert("Sikertelen register", errorMessage);
+        error.response?.data?.message || t("auth.registerError");
+      Alert.alert(t("auth.registerFailed"), errorMessage);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Register</Text>
+      <Text style={styles.title}>{t("auth.register")}</Text>
       <TextInput
         style={styles.input}
         value={username}
-        placeholder="username"
+        placeholder={t("auth.username")}
         onChangeText={setUsername}
         autoCapitalize="none"
       />
       <TextInput
         style={styles.input}
         value={email}
-        placeholder="email"
+        placeholder={t("auth.email")}
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
@@ -58,27 +60,27 @@ export default function RegisterScreen() {
       <TextInput
         style={styles.input}
         value={password}
-        placeholder="password"
+        placeholder={t("auth.password")}
         onChangeText={setPassword}
         secureTextEntry={true}
       />
       <TextInput
         style={styles.input}
         value={confirmPassword}
-        placeholder="confirm password"
+        placeholder={t("auth.confirmPassword")}
         onChangeText={setConfirmPassword}
         secureTextEntry={true}
       />
 
       <TouchableOpacity onPress={handleRegister} style={styles.button}>
-        <Text style={styles.buttonText}>Register</Text>
+        <Text style={styles.buttonText}>{t("auth.register")}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         onPress={() => router.replace("/login")}
         style={styles.button}
       >
-        <Text style={styles.linkButton}>Back</Text>
+        <Text style={styles.linkButton}>{t("common.back")}</Text>
       </TouchableOpacity>
     </View>
   );

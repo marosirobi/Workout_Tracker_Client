@@ -1,12 +1,13 @@
 import type { Exercise } from "@/api/exerciseService";
 import { FilterChips, type FilterOption } from "@/components/FilterChips";
 import {
-    MUSCLE_GROUP_LABELS,
     MUSCLE_GROUP_ORDER,
+    muscleGroupLabel,
     type MuscleGroup,
 } from "@/utils/muscleGroups";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     SectionList,
     StyleSheet,
@@ -17,14 +18,6 @@ import {
 } from "react-native";
 
 type Filter = MuscleGroup | "ALL";
-
-const FILTER_OPTIONS: FilterOption<Filter>[] = [
-  { value: "ALL", label: "Mind" },
-  ...MUSCLE_GROUP_ORDER.map((group) => ({
-    value: group,
-    label: MUSCLE_GROUP_LABELS[group],
-  })),
-];
 
 interface ExerciseBrowserPrompt {
   exercises: Exercise[];
@@ -41,7 +34,19 @@ export function ExerciseBrowser({
   onInfo,
   showChevron = false,
 }: ExerciseBrowserPrompt) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
+
+  const filterOptions = useMemo<FilterOption<Filter>[]>(
+    () => [
+      { value: "ALL", label: t("common.all") },
+      ...MUSCLE_GROUP_ORDER.map((group) => ({
+        value: group,
+        label: muscleGroupLabel(group, t),
+      })),
+    ],
+    [t],
+  );
   const [filter, setFilter] = useState<Filter>("ALL");
 
   const section = useMemo(() => {
@@ -52,7 +57,7 @@ export function ExerciseBrowser({
     )
       .map((group) => ({
         group,
-        title: MUSCLE_GROUP_LABELS[group],
+        title: muscleGroupLabel(group, t),
         data: exercises
           .filter(
             (ex) =>
@@ -62,13 +67,13 @@ export function ExerciseBrowser({
           .sort((a, b) => a.exerciseName.localeCompare(b.exerciseName)),
       }))
       .filter((sect) => sect.data.length > 0);
-  }, [exercises, query, filter]);
+  }, [exercises, query, filter, t]);
 
   return (
     <View style={styles.container}>
       <TextInput
         style={styles.search}
-        placeholder="Keresés..."
+        placeholder={t("exercisePicker.search")}
         placeholderTextColor="#5A5A5E"
         value={query}
         onChangeText={setQuery}
@@ -78,7 +83,7 @@ export function ExerciseBrowser({
 
       <View style={styles.chips}>
         <FilterChips
-          options={FILTER_OPTIONS}
+          options={filterOptions}
           selected={filter}
           onSelect={setFilter}
           horizontalPadding={20}
@@ -106,7 +111,9 @@ export function ExerciseBrowser({
                 disabled={isAdded}
               >
                 <Text style={styles.rowName}>{item.exerciseName}</Text>
-                {isAdded && <Text style={styles.rowBadge}>Hozzáadva</Text>}
+                {isAdded && (
+                  <Text style={styles.rowBadge}>{t("exercisePicker.added")}</Text>
+                )}
                 {showChevron && (
                   <Ionicons name="chevron-forward" size={18} color="#5A5A5E" />
                 )}
@@ -129,7 +136,7 @@ export function ExerciseBrowser({
           );
         }}
         ListEmptyComponent={
-          <Text style={styles.empty}>Nincs ilyen gyakorlat</Text>
+          <Text style={styles.empty}>{t("exercisePicker.empty")}</Text>
         }
       />
     </View>

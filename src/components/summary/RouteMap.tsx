@@ -7,6 +7,7 @@ import {
   Map,
 } from "@maplibre/maplibre-react-native";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 
 const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/dark";
@@ -79,6 +80,7 @@ function computeBounds(points: TrackPointResponse[]): Bounds {
 }
 
 export function RouteMap({ points }: { points: TrackPointResponse[] }) {
+  const { t } = useTranslation();
   const route = useMemo(() => buildRouteGeoJSON(points), [points]);
   const endpoints = useMemo(
     () => (points.length > 0 ? buildEndpointsGeoJSON(points) : null),
@@ -92,7 +94,7 @@ export function RouteMap({ points }: { points: TrackPointResponse[] }) {
   if (!endpoints || !bounds) {
     return (
       <View style={[styles.container, styles.empty]}>
-        <Text style={styles.emptyText}>Ehhez az edzéshez nincs GPS-adat</Text>
+        <Text style={styles.emptyText}>{t("workoutDetail.noGps")}</Text>
       </View>
     );
   }

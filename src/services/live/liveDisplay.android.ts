@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import { formatDuration } from "@/utils/workoutFormat";
 import { PermissionsAndroid, Platform } from "react-native";
 import workoutNotification from "../../../modules/workout-notification";
@@ -15,29 +16,40 @@ async function hasPermission(): Promise<boolean> {
 
 function toNotification(s: LiveWorkoutSnapshot) {
   const pausedPrefix = s.isPaused
-    ? `Szüneteltetve · ${formatDuration(s.elapsedSeconds)}\n`
+    ? `${i18n.t("notification.pausedPrefix", { time: formatDuration(s.elapsedSeconds) })}\n`
     : "";
 
   if (s.type === "CARDIO") {
+    const km = s.distanceKm.toFixed(2);
     return {
       title: s.isPaused
-        ? `Szünet · ${s.distanceKm.toFixed(2)} km`
-        : `Kardió · ${s.distanceKm.toFixed(2)} km`,
-      text: `${pausedPrefix}Tempó ${s.currentPace} /km  •  Átlag ${s.avgPace} /km`,
-      chipText: s.isPaused ? "Szünet" : `${s.distanceKm.toFixed(1)} km`,
+        ? i18n.t("notification.cardioPausedTitle", { km })
+        : i18n.t("notification.cardioTitle", { km }),
+      text:
+        pausedPrefix +
+        i18n.t("notification.cardioText", { pace: s.currentPace, avg: s.avgPace }),
+      chipText: s.isPaused
+        ? i18n.t("notification.paused")
+        : `${s.distanceKm.toFixed(1)} km`,
     };
   }
 
   const exercise = s.exerciseName
-    ? `${s.exerciseName} · ${s.setNumber}. szett`
-    : "Adj hozzá egy gyakorlatot";
+    ? i18n.t("notification.exerciseSet", { name: s.exerciseName, set: s.setNumber })
+    : i18n.t("notification.addExercise");
+  const sets = i18n.t("units.sets", { count: s.completedSets });
 
   return {
     title: s.isPaused
-      ? `Szünet · ${s.completedSets} szett`
-      : `Erőedzés · ${s.completedSets} szett`,
-    text: `${pausedPrefix}${exercise}  •  ${Math.round(s.volumeKg)} kg összesen`,
-    chipText: s.isPaused ? "Szünet" : null,
+      ? i18n.t("notification.strengthPausedTitle", { sets })
+      : i18n.t("notification.strengthTitle", { sets }),
+    text:
+      pausedPrefix +
+      i18n.t("notification.strengthText", {
+        exercise,
+        volume: Math.round(s.volumeKg),
+      }),
+    chipText: s.isPaused ? i18n.t("notification.paused") : null,
   };
 }
 
@@ -61,6 +73,8 @@ export const liveDisplay: LiveWorkoutDisplay = {
       isPaused: snapshot.isPaused,
       accentColor: ACCENT,
       keepAlive,
+      pauseLabel: i18n.t("notification.pause"),
+      resumeLabel: i18n.t("notification.resume"),
     });
   },
 

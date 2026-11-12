@@ -1,3 +1,5 @@
+import type { TFunction } from "i18next";
+
 export type TrackingType =
   | "WEIGHT_REPS"
   | "BODYWEIGHT"
@@ -14,15 +16,19 @@ export const usesReps = (type: TrackingType) => type !== "DURATION";
 export const weightUnitLabel = (type: TrackingType) =>
   type === "WEIGHTED_BODYWEIGHT" ? "+kg" : "kg";
 
-export function setHeaderLabels(type: TrackingType): string[] {
+export function setHeaderLabels(type: TrackingType, t: TFunction): string[] {
+  const set = t("setHeaders.set");
+  const done = t("setHeaders.done");
+  const reps = t("setHeaders.reps");
+
   switch (type) {
     case "BODYWEIGHT":
-      return ["Szett", "Testsúly", "Ismétlés", "Kész"];
+      return [set, t("setHeaders.bodyweight"), reps, done];
     case "WEIGHTED_BODYWEIGHT":
-      return ["Szett", "Plusz súly", "Ismétlés", "Kész"];
+      return [set, t("setHeaders.plusWeight"), reps, done];
     case "DURATION":
-      return ["Szett", "Idő", "Stopper", "Kész"];
+      return [set, t("setHeaders.time"), t("setHeaders.stopwatch"), done];
     default:
-      return ["Szett", "Súly", "Ismétlés", "Kész"];
+      return [set, t("setHeaders.weight"), reps, done];
   }
 }

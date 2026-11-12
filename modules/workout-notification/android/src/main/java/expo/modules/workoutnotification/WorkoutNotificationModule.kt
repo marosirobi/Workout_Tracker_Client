@@ -27,6 +27,8 @@ class WorkoutNotificationData : Record {
   @Field val isPaused: Boolean = false
   @Field val accentColor: String = "#FC4C02"
   @Field val keepAlive: Boolean = false
+  @Field val pauseLabel: String = "Szünet"
+  @Field val resumeLabel: String = "Folytatás"
 }
 
 class WorkoutNotificationModule : Module() {
@@ -143,7 +145,7 @@ class WorkoutNotificationModule : Module() {
       .setRequestPromotedOngoing(true)
       .addAction(
         if (data.isPaused) android.R.drawable.ic_media_play else android.R.drawable.ic_media_pause,
-        if (data.isPaused) "Folytatás" else "Szünet",
+        if (data.isPaused) data.resumeLabel else data.pauseLabel,
         actionPending
       )
 

@@ -5,7 +5,17 @@ export interface CalendarMonth {
   month: number;
 }
 
-export const WEEKDAY_LABELS = ["H", "K", "Sze", "Cs", "P", "Szo", "V"];
+const A_MONDAY = new Date(2024, 0, 1);
+
+export function weekdayLabels(locale: string): string[] {
+  return Array.from({ length: 7 }, (_, index) =>
+    new Date(
+      A_MONDAY.getFullYear(),
+      A_MONDAY.getMonth(),
+      A_MONDAY.getDate() + index,
+    ).toLocaleDateString(locale, { weekday: "short" }),
+  );
+}
 
 const CELLS_PER_MONTH = 42;
 
@@ -53,8 +63,8 @@ export function countByDay(workouts: ActivityWorkout[]): Record<number, number> 
   return counts;
 }
 
-export function formatMonthTitle(month: CalendarMonth): string {
-  return new Date(month.year, month.month, 1).toLocaleDateString("hu-HU", {
+export function formatMonthTitle(month: CalendarMonth, locale: string): string {
+  return new Date(month.year, month.month, 1).toLocaleDateString(locale, {
     year: "numeric",
     month: "long",
   });

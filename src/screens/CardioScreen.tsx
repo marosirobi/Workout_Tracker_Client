@@ -7,15 +7,17 @@ import {
     Text,
     TouchableOpacity,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CardioTabScreen() {
+  const { t } = useTranslation();
   const { start, isStarting, bodyWeightModal } = useStartWorkout();
 
   return (
     <SafeAreaView style={tabStyles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={tabStyles.content}>
-        <Text style={tabStyles.title}>Kardió</Text>
+        <Text style={tabStyles.title}>{t("cardioTab.title")}</Text>
 
         <TouchableOpacity
           style={[tabStyles.primaryButton, isStarting && tabStyles.disabled]}
@@ -25,7 +27,9 @@ export default function CardioTabScreen() {
           {isStarting ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={tabStyles.primaryButtonText}>Kardió indítása</Text>
+            <Text style={tabStyles.primaryButtonText}>
+              {t("cardioTab.start")}
+            </Text>
           )}
         </TouchableOpacity>
       </ScrollView>

@@ -8,6 +8,8 @@ export type WorkoutNotificationData = {
   isPaused: boolean;
   accentColor: string;
   keepAlive?: boolean;
+  pauseLabel?: string;
+  resumeLabel?: string;
 };
 
 export type WorkoutNotificationEvents = {

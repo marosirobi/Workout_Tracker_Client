@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import type { ComponentProps } from "react";
+import { useTranslation } from "react-i18next";
 import { ColorValue } from "react-native";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
@@ -22,6 +23,8 @@ function tabIcon(active: IconName, inactive: IconName) {
 }
 
 export default function TabsLayout() {
+  const { t } = useTranslation();
+
   return (
     <Tabs
       screenOptions={{
@@ -38,28 +41,28 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Kezdőlap",
+          title: t("tabs.home"),
           tabBarIcon: tabIcon("home", "home-outline"),
         }}
       />
       <Tabs.Screen
         name="workout"
         options={{
-          title: "Edzés",
+          title: t("tabs.workout"),
           tabBarIcon: tabIcon("barbell", "barbell-outline"),
         }}
       />
       <Tabs.Screen
         name="cardio"
         options={{
-          title: "Kardió",
+          title: t("tabs.cardio"),
           tabBarIcon: tabIcon("walk", "walk-outline"),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profil",
+          title: t("tabs.profile"),
           tabBarIcon: tabIcon("person", "person-outline"),
         }}
       />

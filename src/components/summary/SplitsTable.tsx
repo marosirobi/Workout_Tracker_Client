@@ -1,8 +1,10 @@
 import type { Split } from "@/utils/workoutAnalysis";
 import { formatPace } from "@/utils/workoutFormat";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 
 export function SplitsTable({ splits }: { splits: Split[] }) {
+  const { t } = useTranslation();
   if (splits.length === 0) return null;
 
   const fastestPace = Math.min(...splits.map((s) => s.pacedMinPerKm));
@@ -10,11 +12,15 @@ export function SplitsTable({ splits }: { splits: Split[] }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>RÉSZIDŐK</Text>
+      <Text style={styles.title}>{t("workoutDetail.splits")}</Text>
 
       <View style={styles.headerRow}>
-        <Text style={[styles.headerText, styles.kmColumn]}>KM</Text>
-        <Text style={[styles.headerText, styles.paceColumn]}>TEMPÓ</Text>
+        <Text style={[styles.headerText, styles.kmColumn]}>
+          {t("workoutDetail.km")}
+        </Text>
+        <Text style={[styles.headerText, styles.paceColumn]}>
+          {t("workoutDetail.pace")}
+        </Text>
       </View>
 
       {splits.map((split) => {

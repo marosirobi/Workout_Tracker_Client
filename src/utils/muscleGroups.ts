@@ -1,3 +1,5 @@
+import type { TFunction } from "i18next";
+
 export type MuscleGroup =
   | "CHEST"
   | "BACK"
@@ -17,12 +19,5 @@ export const MUSCLE_GROUP_ORDER: MuscleGroup[] = [
   "ABS",
 ];
 
-export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
-  CHEST: "Mell",
-  BACK: "Hát",
-  LEGS: "Láb",
-  SHOULDERS: "Váll",
-  BICEPS: "Bicepsz",
-  TRICEPS: "Tricepsz",
-  ABS: "Has",
-};
+export const muscleGroupLabel = (group: MuscleGroup, t: TFunction): string =>
+  t(`muscleGroups.${group}`);

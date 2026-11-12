@@ -1,6 +1,5 @@
 import type { WorkoutType } from "@/store/workoutStore";
+import type { TFunction } from "i18next";
 
-export const DEFAULT_TITLES: Record<WorkoutType, string> = {
-  CARDIO: "Kardió",
-  STRENGTH: "Erőedzés",
-};
+export const defaultWorkoutTitle = (type: WorkoutType, t: TFunction): string =>
+  t(`workoutType.${type}`);

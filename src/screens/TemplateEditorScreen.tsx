@@ -10,6 +10,7 @@ import {
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { usePreventRemove } from "expo-router/react-navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -37,6 +38,7 @@ interface Draft {
 const EMPTY_DRAFT: Draft = { name: "", exercises: [] };
 
 export default function TemplateEditorScreen() {
+  const { t } = useTranslation();
   const { id, fromWorkout } = useLocalSearchParams<{
     id: string;
     fromWorkout?: string;
@@ -118,7 +120,7 @@ export default function TemplateEditorScreen() {
         if (!isActive) return;
 
         if (!result) {
-          Alert.alert("Hiba", "A sablon nem található.");
+          Alert.alert(t("common.error"), t("templateEditor.notFound"));
           setIsDone(true);
           return;
         }
@@ -130,7 +132,7 @@ export default function TemplateEditorScreen() {
       } catch (error) {
         console.error("Hiba a betöltéskor", error);
         if (isActive) {
-          Alert.alert("Hiba", "Nem sikerült betölteni az adatokat.");
+          Alert.alert(t("common.error"), t("templateEditor.loadFailed"));
           setIsDone(true);
         }
       } finally {
@@ -142,7 +144,7 @@ export default function TemplateEditorScreen() {
     return () => {
       isActive = false;
     };
-  }, [templateId, sourceWorkoutId]);
+  }, [templateId, sourceWorkoutId, t]);
 
   useEffect(() => {
     if (isDone) router.back();
@@ -155,12 +157,12 @@ export default function TemplateEditorScreen() {
 
   usePreventRemove(isDirty && !isDone, ({ data }) => {
     Alert.alert(
-      "Elveted a módosításokat?",
-      "A nem mentett változások elvesznek.",
+      t("common.discardChangesTitle"),
+      t("common.discardChangesMessage"),
       [
-        { text: "Maradok", style: "cancel" },
+        { text: t("common.stay"), style: "cancel" },
         {
-          text: "Elvetés",
+          text: t("common.discard"),
           style: "destructive",
           onPress: () => navigation.dispatch(data.action),
         },
@@ -223,11 +225,17 @@ export default function TemplateEditorScreen() {
   const handleSave = async () => {
     const name = draft.name.trim();
     if (!name) {
-      Alert.alert("Hiányzó név", "Adj nevet a sablonnak.");
+      Alert.alert(
+        t("templateEditor.missingNameTitle"),
+        t("templateEditor.missingNameMessage"),
+      );
       return;
     }
     if (draft.exercises.length === 0) {
-      Alert.alert("Üres sablon", "Adj hozzá legalább egy gyakorlatot.");
+      Alert.alert(
+        t("templateEditor.emptyTitle"),
+        t("templateEditor.emptyMessage"),
+      );
       return;
     }
 
@@ -253,7 +261,7 @@ export default function TemplateEditorScreen() {
         "Hiba a sablon mentésekor",
         error.response?.data || error.message,
       );
-      Alert.alert("Sikertelen mentés", "Nem sikerült elmenteni a sablont.");
+      Alert.alert(t("common.saveFailed"), t("templateEditor.saveFailed"));
     } finally {
       setIsSaving(false);
     }
@@ -270,21 +278,20 @@ export default function TemplateEditorScreen() {
         "Hiba a sablon törlésekor",
         error.response?.data || error.message,
       );
-      Alert.alert("Sikertelen törlés", "Nem sikerült törölni a sablont.");
+      Alert.alert(
+        t("templateEditor.deleteFailedTitle"),
+        t("templateEditor.deleteFailed"),
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
   const confirmDelete = () => {
-    Alert.alert(
-      "Sablon törlése",
-      "Biztosan törlöd ezt a sablont? A vele végzett edzéseid megmaradnak.",
-      [
-        { text: "Mégse", style: "cancel" },
-        { text: "Törlés", style: "destructive", onPress: handleDelete },
-      ],
-    );
+    Alert.alert(t("templateEditor.delete"), t("templateEditor.deleteConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("common.delete"), style: "destructive", onPress: handleDelete },
+    ]);
   };
 
   if (isLoading) {
@@ -298,7 +305,7 @@ export default function TemplateEditorScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <EditorHeader
-        title={isNew ? "Új sablon" : "Sablon szerkesztése"}
+        title={isNew ? t("templateEditor.newTitle") : t("templateEditor.editTitle")}
         onCancel={() => router.back()}
         onSave={handleSave}
         isSaving={isSaving}
@@ -312,22 +319,22 @@ export default function TemplateEditorScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.label}>NÉV</Text>
+          <Text style={styles.label}>{t("templateEditor.nameLabel")}</Text>
           <TextInput
             style={styles.input}
             value={draft.name}
             onChangeText={(name) =>
               setDraft((current) => ({ ...current, name }))
             }
-            placeholder="pl. Mell-tricepsz nap"
+            placeholder={t("templateEditor.namePlaceholder")}
             placeholderTextColor="#5A5A5E"
             maxLength={MAX_NAME_LENGTH}
             editable={!isSaving}
           />
 
-          <Text style={styles.label}>GYAKORLATOK</Text>
+          <Text style={styles.label}>{t("templateEditor.exercisesLabel")}</Text>
           {draft.exercises.length === 0 && (
-            <Text style={styles.empty}>Még nincs gyakorlat a sablonban.</Text>
+            <Text style={styles.empty}>{t("templateEditor.empty")}</Text>
           )}
           {draft.exercises.map((exercise, index) => (
             <TemplateExerciseRow
@@ -349,7 +356,9 @@ export default function TemplateEditorScreen() {
             onPress={() => setPickerVisible(true)}
             disabled={isSaving}
           >
-            <Text style={styles.addButtonText}>+ Gyakorlat hozzáadása</Text>
+            <Text style={styles.addButtonText}>
+              {t("templateEditor.addExercise")}
+            </Text>
           </TouchableOpacity>
 
           {!isNew && (
@@ -358,7 +367,7 @@ export default function TemplateEditorScreen() {
               onPress={confirmDelete}
               disabled={isSaving}
             >
-              <Text style={styles.deleteText}>Sablon törlése</Text>
+              <Text style={styles.deleteText}>{t("templateEditor.delete")}</Text>
             </TouchableOpacity>
           )}
         </ScrollView>

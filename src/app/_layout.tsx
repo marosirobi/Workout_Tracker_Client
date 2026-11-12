@@ -1,3 +1,5 @@
+import "@/i18n";
+import "@/store/settingsStore";
 import { startWorkoutLiveSync } from "@/services/live/workoutLiveSync";
 import { syncLocationTrackingWithStore } from "@/services/locationTask";
 import { useAuthStore } from "@/store/authStore";

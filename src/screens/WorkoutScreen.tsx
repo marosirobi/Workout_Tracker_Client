@@ -5,6 +5,7 @@ import { useStartWorkout } from "@/hooks/useStartWorkout";
 import { tabStyles } from "@/styles/tabScreen";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   ScrollView,
@@ -16,6 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function WorkoutTabScreen() {
+  const { t } = useTranslation();
   const { start, isStarting, bodyWeightModal } = useStartWorkout();
   const router = useRouter();
 
@@ -70,20 +72,20 @@ export default function WorkoutTabScreen() {
     if (loadFailed) {
       return (
         <Text style={tabStyles.mutedText}>
-          Nem sikerült betölteni a sablonokat.
+          {t("workoutTab.loadFailed")}
         </Text>
       );
     }
     if (templates.length === 0) {
-      return <Text style={tabStyles.mutedText}>Még nincs sablonod</Text>;
+      return <Text style={tabStyles.mutedText}>{t("workoutTab.empty")}</Text>;
     }
-    return templates.map((t) => (
+    return templates.map((template) => (
       <TemplateCard
-        key={t.id}
-        template={t}
-        onPress={() => startFromTemplate(t)}
-        onEdit={() => router.push(`/templates/${t.id}`)}
-        isStarting={startingTemplateId === t.id}
+        key={template.id}
+        template={template}
+        onPress={() => startFromTemplate(template)}
+        onEdit={() => router.push(`/templates/${template.id}`)}
+        isStarting={startingTemplateId === template.id}
         disabled={isStarting}
       />
     ));
@@ -94,7 +96,7 @@ export default function WorkoutTabScreen() {
   return (
     <SafeAreaView style={tabStyles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={tabStyles.content}>
-        <Text style={tabStyles.title}>Edzés</Text>
+        <Text style={tabStyles.title}>{t("workoutTab.title")}</Text>
 
         <TouchableOpacity
           style={[tabStyles.primaryButton, isStarting && tabStyles.disabled]}
@@ -104,20 +106,22 @@ export default function WorkoutTabScreen() {
           {isStartingEmpty ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={tabStyles.primaryButtonText}>Üres edzés indítása</Text>
+            <Text style={tabStyles.primaryButtonText}>
+              {t("workoutTab.startEmpty")}
+            </Text>
           )}
         </TouchableOpacity>
 
         <View style={styles.sectionHeader}>
           <Text style={[tabStyles.sectionTitle, styles.sectionTitle]}>
-            SABLONOK
+            {t("workoutTab.templates")}
           </Text>
           <TouchableOpacity
             onPress={() => router.push("/templates/new")}
             disabled={isStarting}
             hitSlop={10}
           >
-            <Text style={styles.newTemplate}>+ Új sablon</Text>
+            <Text style={styles.newTemplate}>{t("workoutTab.newTemplate")}</Text>
           </TouchableOpacity>
         </View>
         {renderTemplates()}

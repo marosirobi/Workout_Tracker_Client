@@ -1,5 +1,6 @@
 import { IconButton } from "@/components/IconButton";
-import { MUSCLE_GROUP_LABELS, MuscleGroup } from "@/utils/muscleGroups";
+import { muscleGroupLabel, MuscleGroup } from "@/utils/muscleGroups";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 
 export interface TempExercise {
@@ -32,6 +33,8 @@ export function TemplateExerciseRow({
   onMoveDown,
   onRemove,
 }: TempExerciseProps) {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.card}>
       <View style={styles.topRow}>
@@ -41,7 +44,7 @@ export function TemplateExerciseRow({
           </Text>
           {exercise.muscleGroup && (
             <Text style={styles.group}>
-              {MUSCLE_GROUP_LABELS[exercise.muscleGroup]}
+              {muscleGroupLabel(exercise.muscleGroup, t)}
             </Text>
           )}
         </View>
@@ -55,7 +58,9 @@ export function TemplateExerciseRow({
             onPress={() => onChangeSets(-1)}
             disabled={exercise.targetSets <= minSets}
           />
-          <Text style={styles.sets}>{exercise.targetSets} szett</Text>
+          <Text style={styles.sets}>
+            {t("units.sets", { count: exercise.targetSets })}
+          </Text>
           <IconButton
             name="add"
             onPress={() => onChangeSets(1)}

@@ -1,33 +1,35 @@
 import { BestEffortResponse } from "@/api/workoutService";
 import { rankLabel } from "@/utils/rankLabel";
 import { formatDuration } from "@/utils/workoutFormat";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 
-const DISTANCE_LABELS: Record<number, string> = {
-  400: "400 m",
-  1000: "1 km",
-  1609: "1 mérföld",
-  5000: "5 km",
-  10000: "10 km",
-  21098: "Félmaraton",
-  42195: "Maraton",
-};
-
 export function BestEfforts({ efforts }: { efforts: BestEffortResponse[] }) {
+  const { t } = useTranslation();
   if (efforts.length === 0) return null;
+
+  const distanceLabels: Record<number, string> = {
+    400: "400 m",
+    1000: "1 km",
+    1609: t("workoutDetail.mile"),
+    5000: "5 km",
+    10000: "10 km",
+    21098: t("workoutDetail.halfMarathon"),
+    42195: t("workoutDetail.marathon"),
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>LEGJOBB IDŐK</Text>
+      <Text style={styles.title}>{t("workoutDetail.bestEfforts")}</Text>
 
       {efforts.map((effort) => {
-        const label = rankLabel(effort.rank);
+        const label = rankLabel(effort.rank, t);
         const isRecord = effort.rank === 1;
 
         return (
           <View key={effort.distanceMeters} style={styles.row}>
             <Text style={styles.distance}>
-              {DISTANCE_LABELS[effort.distanceMeters] ??
+              {distanceLabels[effort.distanceMeters] ??
                 `${effort.distanceMeters} m`}
             </Text>
 
