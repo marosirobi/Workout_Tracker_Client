@@ -5,6 +5,7 @@ import { LANGUAGE_NAMES } from "@/i18n";
 import { useAuthStore } from "@/store/authStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { tabStyles } from "@/styles/tabScreen";
+import { logger } from "@/utils/logger";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import type { ComponentProps } from "react";
@@ -64,7 +65,7 @@ export default function ProfileScreen() {
           });
         })
         .catch((error) =>
-          console.error("Hiba a profil betöltésekor", error),
+          logger.error("Hiba a profil betöltésekor", error),
         );
 
       return () => {
@@ -80,7 +81,7 @@ export default function ProfileScreen() {
       authService
         .logout(refreshToken)
         .catch((error) =>
-          console.log("A szerveroldali kijelentkezés nem sikerült", error),
+          logger.warn("A szerveroldali kijelentkezés nem sikerült", error),
         );
     }
   };

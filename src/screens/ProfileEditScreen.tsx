@@ -13,6 +13,7 @@ import {
   parseDecimalInput,
   sanitizeDecimal,
 } from "@/utils/numberInput";
+import { logger } from "@/utils/logger";
 import { useRouter } from "expo-router";
 import { useNavigation, usePreventRemove } from "expo-router/react-navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -86,10 +87,7 @@ export default function ProfileEditScreen() {
         setDraft(loaded);
         setInitialDraft(loaded);
       } catch (error: any) {
-        console.error(
-          "Hiba a profil betöltésekor",
-          error.response?.data || error.message,
-        );
+        logger.error("Hiba a profil betöltésekor", error);
         if (isActive) {
           Alert.alert(t("common.error"), t("profileEdit.loadFailed"));
           setIsDone(true);
@@ -160,10 +158,7 @@ export default function ProfileEditScreen() {
 
       setIsDone(true);
     } catch (error: any) {
-      console.error(
-        "Hiba a profil mentésekor",
-        error.response?.data || error.message,
-      );
+      logger.error("Hiba a profil mentésekor", error);
       const code = error.response?.data?.code;
       const message =
         code === "EMAIL_TAKEN"

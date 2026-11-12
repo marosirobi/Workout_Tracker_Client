@@ -1,5 +1,6 @@
 import i18n from "@/i18n";
 import { useWorkoutStore } from "@/store/workoutStore";
+import { logger } from "@/utils/logger";
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
 import { Alert, Platform } from "react-native";
@@ -33,7 +34,7 @@ const saveLocations = (locations: Location.LocationObject[]) => {
 
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (error) {
-    console.warn("gps hiba:", error.message);
+    logger.warn("GPS hiba", error);
     return;
   }
   if (!data) return;
@@ -95,7 +96,7 @@ export async function startLocationTracking(): Promise<TrackingMode> {
       }
       return "background";
     } catch (e) {
-      console.warn("A háttér GPS nem indult el, előtér módra váltok:", e);
+      logger.warn("A háttér GPS nem indult el, előtér módra váltok", e);
     }
   }
 
@@ -123,7 +124,7 @@ export async function stopLocationTracking(): Promise<void> {
       await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
     }
   } catch (e) {
-    console.warn("Hiba a GPS leállításakor:", e);
+    logger.warn("Hiba a GPS leállításakor", e);
   }
 }
 

@@ -10,6 +10,7 @@ import {
 } from "@/store/workoutStore";
 import { defaultWorkoutTitle } from "@/utils/workoutDefaults";
 import { getAvgPaceMinutes } from "@/utils/workoutFormat";
+import { logger } from "@/utils/logger";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -135,7 +136,7 @@ export default function SaveWorkoutScreen() {
 
       await endActiveWorkoutLocally(activeWorkoutId);
     } catch (error: any) {
-      console.error("Mentési hiba:", error.response?.data || error.message);
+      logger.error("Mentési hiba", error);
       const status = error.response?.status;
       if (status === 404 || status === 400) {
         Alert.alert(

@@ -8,6 +8,7 @@ import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
 } from "@/utils/authValidation";
+import { logger } from "@/utils/logger";
 import { useRouter } from "expo-router";
 import { useNavigation, usePreventRemove } from "expo-router/react-navigation";
 import { useEffect, useState } from "react";
@@ -93,10 +94,7 @@ export default function ChangePasswordScreen() {
       Alert.alert(t("changePassword.successTitle"), t("changePassword.success"));
       setIsDone(true);
     } catch (error: any) {
-      console.error(
-        "Hiba a jelszó módosításakor",
-        error.response?.data || error.message,
-      );
+      logger.error("Hiba a jelszó módosításakor", error);
       const code = error.response?.data?.code;
       const message =
         code === "WRONG_CURRENT_PASSWORD"

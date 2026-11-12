@@ -28,6 +28,7 @@ import {
   formatVolume,
   formatWeight,
 } from "@/utils/workoutFormat";
+import { logger } from "@/utils/logger";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -89,7 +90,7 @@ export default function WorkoutDetailsScreen() {
           const data = await workoutService.getWorkoutById(Number(id));
           if (isActive) setWorkout(data);
         } catch (error) {
-          console.error("Hiba a részletek letöltésekor", error);
+          logger.error("Hiba a részletek letöltésekor", error);
           if (isActive) {
             Alert.alert(t("common.error"), t("workoutDetail.loadFailed"));
             close();

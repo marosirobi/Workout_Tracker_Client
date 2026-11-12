@@ -13,6 +13,7 @@ import {
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
 } from "@/utils/authValidation";
+import { logger } from "@/utils/logger";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -108,7 +109,7 @@ export default function RegisterScreen() {
       );
       setAuth(user, token, refreshToken);
     } catch (error: any) {
-      console.error("Regisztrációs hiba", error.response?.data || error.message);
+      logger.error("Regisztrációs hiba", error);
       const code = error.response?.data?.code;
       if (code === "EMAIL_TAKEN") {
         setErrors({ email: "auth.emailTaken" });

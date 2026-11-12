@@ -1,4 +1,5 @@
 import { useAuthStore } from "@/store/authStore";
+import { logger } from "@/utils/logger";
 import axios from "axios";
 
 const BASE_URL = "http://192.168.1.243:8081/api";
@@ -65,7 +66,7 @@ axiosClient.interceptors.response.use(
       originalRequest.headers.Authorization = `Bearer ${newToken}`;
       return axiosClient(originalRequest);
     } catch (refreshError) {
-      console.log("A munkamenet lejárt, újra be kell jelentkezni");
+      logger.warn("A munkamenet lejárt, újra be kell jelentkezni");
       useAuthStore.getState().clearAuth();
       return Promise.reject(refreshError);
     }

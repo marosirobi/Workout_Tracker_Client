@@ -4,6 +4,7 @@ import { WorkoutCard } from "@/components/home/WorkoutCard";
 import { useAuthStore } from "@/store/authStore";
 import { WorkoutType } from "@/store/workoutStore";
 import { tabStyles } from "@/styles/tabScreen";
+import { logger } from "@/utils/logger";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -62,7 +63,7 @@ export default function HomeScreen() {
       setNextPage(1);
       setHasMore(response.number + 1 < response.totalPages);
     } catch (error) {
-      console.error("Hiba az edzések lekérésekor", error);
+      logger.error("Hiba az edzések lekérésekor", error);
     } finally {
       if (requestId === requestedIdRef.current) {
         setLoading(false);
@@ -89,7 +90,7 @@ export default function HomeScreen() {
       setNextPage((page) => page + 1);
       setHasMore(response.number + 1 < response.totalPages);
     } catch (error) {
-      console.error("Hiba a további edzések lekérésekor", error);
+      logger.error("Hiba a további edzések lekérésekor", error);
     } finally {
       setIsLoadingMore(false);
     }

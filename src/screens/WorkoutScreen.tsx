@@ -3,6 +3,7 @@ import { BodyWeightModal } from "@/components/BodyWeightModal";
 import { TemplateCard } from "@/components/workout/TemplateCard";
 import { useStartWorkout } from "@/hooks/useStartWorkout";
 import { tabStyles } from "@/styles/tabScreen";
+import { logger } from "@/utils/logger";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -43,7 +44,7 @@ export default function WorkoutTabScreen() {
           );
           setLoadFailed(false);
         } catch (error) {
-          console.error("Hiba a sablonok betöltésekor", error);
+          logger.error("Hiba a sablonok betöltésekor", error);
           if (active) setLoadFailed(true);
         } finally {
           if (active) setIsLoadingTemplate(false);

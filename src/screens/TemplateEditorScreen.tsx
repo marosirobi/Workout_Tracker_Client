@@ -7,6 +7,7 @@ import {
   TempExercise,
   TemplateExerciseRow,
 } from "@/components/workout/TemplateExerciseRow";
+import { logger } from "@/utils/logger";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { usePreventRemove } from "expo-router/react-navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -66,7 +67,7 @@ export default function TemplateEditorScreen() {
       .getAllExercises()
       .then(setCatalog)
       .catch((error) =>
-        console.error("Hiba a gyakorlatok betöltésekor", error),
+        logger.error("Hiba a gyakorlatok betöltésekor", error),
       );
   }, []);
 
@@ -130,7 +131,7 @@ export default function TemplateEditorScreen() {
           setInitialDraft(result.draft);
         }
       } catch (error) {
-        console.error("Hiba a betöltéskor", error);
+        logger.error("Hiba a betöltéskor", error);
         if (isActive) {
           Alert.alert(t("common.error"), t("templateEditor.loadFailed"));
           setIsDone(true);
@@ -257,10 +258,7 @@ export default function TemplateEditorScreen() {
       }
       setIsDone(true);
     } catch (error: any) {
-      console.error(
-        "Hiba a sablon mentésekor",
-        error.response?.data || error.message,
-      );
+      logger.error("Hiba a sablon mentésekor", error);
       Alert.alert(t("common.saveFailed"), t("templateEditor.saveFailed"));
     } finally {
       setIsSaving(false);
@@ -274,10 +272,7 @@ export default function TemplateEditorScreen() {
       await templateService.deleteTemplate(templateId);
       setIsDone(true);
     } catch (error: any) {
-      console.error(
-        "Hiba a sablon törlésekor",
-        error.response?.data || error.message,
-      );
+      logger.error("Hiba a sablon törlésekor", error);
       Alert.alert(
         t("templateEditor.deleteFailedTitle"),
         t("templateEditor.deleteFailed"),

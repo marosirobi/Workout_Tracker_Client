@@ -21,6 +21,7 @@ import {
   usesWeight,
 } from "@/utils/trackingTypes";
 import { defaultWorkoutTitle } from "@/utils/workoutDefaults";
+import { logger } from "@/utils/logger";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useNavigation, usePreventRemove } from "expo-router/react-navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -168,10 +169,7 @@ export default function WorkoutEditorScreen() {
         setDraft(loaded);
         setInitialDraft(loaded);
       } catch (error: any) {
-        console.error(
-          "Hiba az edzés betöltésekor",
-          error.response?.data || error.message,
-        );
+        logger.error("Hiba az edzés betöltésekor", error);
         if (isActive) {
           Alert.alert(t("common.error"), t("workoutEditor.loadFailed"));
           setIsDone(true);
@@ -193,7 +191,7 @@ export default function WorkoutEditorScreen() {
       .getAllExercises()
       .then(setCatalog)
       .catch((error) =>
-        console.error("Hiba a gyakorlatok betöltésekor", error),
+        logger.error("Hiba a gyakorlatok betöltésekor", error),
       );
   }, [isStrength]);
 
@@ -331,10 +329,7 @@ export default function WorkoutEditorScreen() {
       await workoutService.editWorkout(workoutId, request);
       setIsDone(true);
     } catch (error: any) {
-      console.error(
-        "Hiba az edzés mentésekor",
-        error.response?.data || error.message,
-      );
+      logger.error("Hiba az edzés mentésekor", error);
       Alert.alert(t("common.saveFailed"), t("workoutEditor.saveFailed"));
     } finally {
       setIsSaving(false);

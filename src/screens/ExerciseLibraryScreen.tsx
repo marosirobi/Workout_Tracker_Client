@@ -1,6 +1,7 @@
 import { exerciseService, type Exercise } from "@/api/exerciseService";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ExerciseBrowser } from "@/components/workout/ExerciseBrowser";
+import { logger } from "@/utils/logger";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,10 +24,7 @@ export default function ExerciseLibraryScreen() {
         const data = await exerciseService.getAllExercises();
         if (isActive) setExercises(data);
       } catch (error: any) {
-        console.error(
-          "Hiba a gyakorlatok betöltésekor",
-          error.response?.data || error.message,
-        );
+        logger.error("Hiba a gyakorlatok betöltésekor", error);
         if (isActive) setLoadFailed(true);
       } finally {
         if (isActive) setIsLoading(false);

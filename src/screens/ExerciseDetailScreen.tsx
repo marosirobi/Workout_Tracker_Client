@@ -22,6 +22,7 @@ import {
   formatVolume,
   formatWeight,
 } from "@/utils/workoutFormat";
+import { logger } from "@/utils/logger";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import type { TFunction } from "i18next";
@@ -237,10 +238,7 @@ export default function ExerciseDetailScreen() {
           );
         }
       } catch (error: any) {
-        console.error(
-          "Hiba a gyakorlat betöltésekor",
-          error.response?.data || error.message,
-        );
+        logger.error("Hiba a gyakorlat betöltésekor", error);
         if (isActive) setLoadFailed(true);
       } finally {
         if (isActive) setIsLoading(false);

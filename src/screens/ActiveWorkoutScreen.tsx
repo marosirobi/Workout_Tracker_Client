@@ -24,6 +24,7 @@ import {
   getCurrentPaceMinutes,
   getLiveSpeedMs,
 } from "@/utils/workoutFormat";
+import { logger } from "@/utils/logger";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -85,7 +86,7 @@ export default function ActiveWorkoutScreen() {
         const data = await exerciseService.getAllExercises();
         setAvailableExercises(data);
       } catch (error) {
-        console.error("Hiba a gyakorlatok betoltesekor:", error);
+        logger.error("Hiba a gyakorlatok betöltésekor", error);
       }
     };
     fetchExercises();

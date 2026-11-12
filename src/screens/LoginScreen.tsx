@@ -4,6 +4,7 @@ import { AuthScreen, authStyles } from "@/components/auth/AuthScreen";
 import { AuthTextField } from "@/components/auth/AuthTextField";
 import { useAuthStore } from "@/store/authStore";
 import { isValidEmail } from "@/utils/authValidation";
+import { logger } from "@/utils/logger";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -60,7 +61,7 @@ export default function LoginScreen() {
       );
       setAuth(user, token, refreshToken);
     } catch (error: any) {
-      console.error("Bejelentkezési hiba", error.response?.data || error.message);
+      logger.error("Bejelentkezési hiba", error);
       setFormError(
         error.response?.status === 401
           ? "auth.wrongCredentials"

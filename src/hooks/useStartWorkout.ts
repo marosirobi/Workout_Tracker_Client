@@ -3,6 +3,7 @@ import { startWorkout, type TemplateToStart } from "@/services/workoutActions";
 import i18n from "@/i18n";
 import { useAuthStore } from "@/store/authStore";
 import { WorkoutType } from "@/store/workoutStore";
+import { logger } from "@/utils/logger";
 import { useRef, useState } from "react";
 import { Alert } from "react-native";
 
@@ -52,10 +53,7 @@ export function useStartWorkout() {
       useAuthStore.getState().updateUser({ bodyWeightKg: updated.bodyWeightKg });
       closePrompt(true);
     } catch (error: any) {
-      console.error(
-        "Hiba a testsúly mentésekor:",
-        error.response?.data || error.message,
-      );
+      logger.error("Hiba a testsúly mentésekor", error);
       Alert.alert(i18n.t("common.saveFailed"), i18n.t("bodyWeight.saveFailed"));
     } finally {
       setIsSavingWeight(false);
@@ -72,10 +70,7 @@ export function useStartWorkout() {
 
       await startWorkout(type, template);
     } catch (error: any) {
-      console.error(
-        "Hiba az edzés indításakor:",
-        error.response?.data || error.message,
-      );
+      logger.error("Hiba az edzés indításakor", error);
       Alert.alert(i18n.t("common.error"), i18n.t("startWorkout.failed"));
     } finally {
       setIsStarting(false);

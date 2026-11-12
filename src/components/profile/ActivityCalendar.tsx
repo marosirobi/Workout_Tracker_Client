@@ -11,6 +11,7 @@ import {
   type CalendarMonth,
 } from "@/utils/calendar";
 import { useLocale } from "@/i18n/useLocale";
+import { logger } from "@/utils/logger";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
@@ -132,10 +133,7 @@ export function ActivityCalendar({ refreshSignal }: { refreshSignal: number }) {
       }));
     } catch (error: any) {
       requestedRef.current.delete(key);
-      console.error(
-        "Hiba az aktivitás betöltésekor",
-        error.response?.data || error.message,
-      );
+      logger.error("Hiba az aktivitás betöltésekor", error);
     }
   }, []);
 

@@ -2,6 +2,7 @@ import {
   WorkoutLiveActivity,
   type WorkoutActivityProps,
 } from "@/widgets/WorkoutLiveActivity";
+import { logger } from "@/utils/logger";
 import { addUserInteractionListener, type LiveActivity } from "expo-widgets";
 import type { LiveWorkoutDisplay, LiveWorkoutSnapshot } from "./types";
 
@@ -58,7 +59,7 @@ export const liveDisplay: LiveWorkoutDisplay = {
         );
       }
     } catch (e) {
-      console.warn("Live Activity hiba:", e);
+      logger.warn("Live Activity hiba", e);
     }
   },
 
