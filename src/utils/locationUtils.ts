@@ -1,13 +1,12 @@
 const toRad = (degrees: number): number => (degrees * Math.PI) / 180;
 
-//haversine-keplet
 export const calculateDistance = (
   lat1: number,
   lon1: number,
   lat2: number,
   lon2: number,
 ): number => {
-  const R = 6371; //km-ben fold sugar
+  const EARTH_RADIUS_KM = 6371;
 
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
@@ -21,5 +20,5 @@ export const calculateDistance = (
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-  return R * c;
+  return EARTH_RADIUS_KM * c;
 };

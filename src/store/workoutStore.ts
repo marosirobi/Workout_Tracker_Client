@@ -60,7 +60,6 @@ interface ActiveWorkoutData {
   templateName: string | null;
   bodyWeightKg: number | null;
 
-  //cardio
   totalDistanceKm: number;
   trackPoints: TrackPoint[];
   elevationGain: number;

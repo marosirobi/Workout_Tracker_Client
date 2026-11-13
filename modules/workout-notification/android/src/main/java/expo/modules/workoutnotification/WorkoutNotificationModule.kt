@@ -168,14 +168,12 @@ class WorkoutNotificationModule : Module() {
         ContextCompat.startForegroundService(context, intent)
         return
       } catch (e: Exception) {
-        // pl. hatterbol nem indithato: sima ertesites marad
       }
     }
 
     try {
       manager.notify(NOTIFICATION_ID, notification)
     } catch (e: SecurityException) {
-      // nincs ertesitesi engedely
     }
   }
 }

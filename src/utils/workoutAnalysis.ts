@@ -34,7 +34,6 @@ const PACE_WINDOW_SEC = 30;
 const MIN_PACE_WINDOW_SEC = 5;
 const SLOWEST_SHOWN_PACE = 15;
 
-// szegmensekre bontas, hogy szunet sebessege ne legyen szamolva
 export function splitIntoSegments(
   points: TrackPointResponse[],
 ): TrackPointResponse[][] {
