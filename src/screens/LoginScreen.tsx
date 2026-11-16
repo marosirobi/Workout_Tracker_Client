@@ -15,7 +15,10 @@ type FieldErrorKey =
   | "auth.emailRequired"
   | "auth.invalidEmail"
   | "auth.passwordRequired";
-type FormErrorKey = "auth.wrongCredentials" | "auth.loginError";
+type FormErrorKey =
+  | "auth.wrongCredentials"
+  | "auth.tooManyAttempts"
+  | "auth.loginError";
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -62,10 +65,13 @@ export default function LoginScreen() {
       setAuth(user, token, refreshToken);
     } catch (error: any) {
       logger.error("Bejelentkezési hiba", error);
+      const status = error.response?.status;
       setFormError(
-        error.response?.status === 401
+        status === 401
           ? "auth.wrongCredentials"
-          : "auth.loginError",
+          : status === 429
+            ? "auth.tooManyAttempts"
+            : "auth.loginError",
       );
     } finally {
       setIsSubmitting(false);

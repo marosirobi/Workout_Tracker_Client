@@ -89,6 +89,7 @@ export const hu = {
     usernameTaken: "Ez a felhasználónév már foglalt.",
     wrongCredentials: "Hibás e-mail cím vagy jelszó.",
     loginError: "Nem sikerült bejelentkezni. Próbáld újra később.",
+    tooManyAttempts: "Túl sok próbálkozás. Próbáld újra néhány perc múlva.",
     createAccount: "Fiók létrehozása",
     createAccountSubtitle: "Pár adat, és már kezdheted is.",
     noAccount: "Nincs még fiókod?",

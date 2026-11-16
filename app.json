@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "com.workouttracker.client",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -40,7 +41,6 @@
         {
           "locationWhenInUsePermission": "Az alkalmazás a helyzetedet használja a kardió edzések (távolság, tempó) méréséhez.",
           "locationAlwaysAndWhenInUsePermission": "Az alkalmazásnak akkor is szüksége van a helyzetedre, amikor a telefon le van zárva, hogy az edzés mérése ne álljon le.",
-          "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true,
           "isIosBackgroundLocationEnabled": true
         }

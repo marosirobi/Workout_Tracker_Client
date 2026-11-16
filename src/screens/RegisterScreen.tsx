@@ -30,6 +30,7 @@ type FieldErrorKey =
   | "auth.confirmRequired"
   | "auth.passwordMismatch"
   | `auth.passwordProblem.${PasswordProblem}`;
+type FormErrorKey = "auth.tooManyAttempts" | "auth.registerError";
 
 export default function RegisterScreen() {
   const { t } = useTranslation();
@@ -46,12 +47,12 @@ export default function RegisterScreen() {
   const [errors, setErrors] = useState<Partial<Record<Field, FieldErrorKey>>>(
     {},
   );
-  const [hasFormError, setHasFormError] = useState(false);
+  const [formError, setFormError] = useState<FormErrorKey | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const clearError = (field: Field) => {
     setErrors((current) => ({ ...current, [field]: undefined }));
-    setHasFormError(false);
+    setFormError(null);
   };
 
   const errorText = (field: Field) => {
@@ -97,7 +98,7 @@ export default function RegisterScreen() {
 
     const nextErrors = validate();
     setErrors(nextErrors);
-    setHasFormError(false);
+    setFormError(null);
     if (Object.values(nextErrors).some(Boolean)) return;
 
     setIsSubmitting(true);
@@ -115,8 +116,10 @@ export default function RegisterScreen() {
         setErrors({ email: "auth.emailTaken" });
       } else if (code === "USERNAME_TAKEN") {
         setErrors({ username: "auth.usernameTaken" });
+      } else if (code === "TOO_MANY_REQUESTS") {
+        setFormError("auth.tooManyAttempts");
       } else {
-        setHasFormError(true);
+        setFormError("auth.registerError");
       }
     } finally {
       setIsSubmitting(false);
@@ -205,9 +208,7 @@ export default function RegisterScreen() {
         editable={!isSubmitting}
       />
 
-      {hasFormError ? (
-        <Text style={authStyles.formError}>{t("auth.registerError")}</Text>
-      ) : null}
+      {formError ? <Text style={authStyles.formError}>{t(formError)}</Text> : null}
 
       <AuthButton
         title={t("auth.register")}

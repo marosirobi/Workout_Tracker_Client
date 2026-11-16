@@ -91,6 +91,7 @@ export const en: typeof hu = {
     usernameTaken: "This username is already taken.",
     wrongCredentials: "Wrong email or password.",
     loginError: "Could not log in. Please try again later.",
+    tooManyAttempts: "Too many attempts. Please try again in a few minutes.",
     createAccount: "Create account",
     createAccountSubtitle: "A few details and you are ready to go.",
     noAccount: "Don't have an account?",

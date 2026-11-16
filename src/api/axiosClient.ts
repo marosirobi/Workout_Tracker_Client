@@ -2,7 +2,13 @@ import { useAuthStore } from "@/store/authStore";
 import { logger } from "@/utils/logger";
 import axios from "axios";
 
-const BASE_URL = "http://192.168.1.243:8081/api";
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+if (!API_URL) {
+  throw new Error("EXPO_PUBLIC_API_URL is not set");
+}
+
+const BASE_URL = `${API_URL}/api`;
 
 export const axiosClient = axios.create({
   baseURL: BASE_URL,
